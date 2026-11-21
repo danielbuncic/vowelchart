@@ -1,0 +1,1674 @@
+% !TeX TXS-program:compile = txs:///xelatex/[--shell-escape]
+%
+% vowelchart.tex -- documentation of the vowelchart package
+% Copyright (C) 2026 Daniel Bunčić <daniel.buncic@uni-koeln.de>
+%
+% This work may be distributed and/or modified under the conditions of the
+% LaTeX Project Public License, either version 1.3c of this license or (at
+% your option) any later version. The latest version of this license is in
+%   https://www.latex-project.org/lppl.txt
+% and version 1.3c or later is part of all distributions of LaTeX version
+% 2008 or later.
+%
+% Compile with XeLaTeX or LuaLaTeX and -shell-escape (minted), two or
+% three runs. vowelchart.sty must be in the same folder (or installed).
+\documentclass[a4paper,11pt]{article}
+
+\usepackage{iftex}
+\iftutex\else\errmessage{Please compile this document with LuaLaTeX or XeLaTeX.}\fi
+
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{fontspec}
+\IfFontExistsTF{Libertinus Serif}%
+{\setmainfont{Libertinus Serif}}%
+{\IfFontExistsTF{Charis SIL}{\setmainfont{Charis SIL}}{\setmainfont{DejaVu Serif}}}
+% Monospaced font: first choice Consolas; otherwise the first of the
+% following that is installed; at the end the default (Latin Modern Mono).
+\IfFontExistsTF{Consolas}%
+{\setmonofont{Consolas}[Scale=MatchLowercase]}%
+{\IfFontExistsTF{Inconsolata}%
+ {\setmonofont{Inconsolata}[Scale=MatchLowercase]}%
+ {\IfFontExistsTF{Liberation Mono}%
+  {\setmonofont{Liberation Mono}[Scale=MatchLowercase]}%
+  {\IfFontExistsTF{DejaVu Sans Mono}%
+   {\setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]}%
+   {}}}}
+
+\usepackage{booktabs,longtable,array,amsmath,hologo,xcolor,tipa,needspace}
+\usepackage{tcolorbox}
+\usepackage{vowelchart}
+\usepackage{etoolbox}
+\usepackage{tocloft}
+\usepackage{url}
+
+\tcbuselibrary{skins,minted}
+
+\tcbset{
+	minted options={
+		fontsize=\footnotesize,
+		breaklines,
+		linenos=false,
+		bgcolor=gray!6,
+		style=default
+	},
+	minted language=latex,
+	syntaxbox/.style={
+		listing only,
+		listing engine=minted,
+		colback=gray!6,
+		colframe=gray!50,
+		boxrule=.4pt,
+		sharp corners,
+		left=2mm, right=2mm,
+		top=1mm, bottom=1mm,
+		before skip=6pt, after skip=8pt
+	},
+	ex/.style={
+		listing side text,
+		listing engine=minted,
+		colback=gray!4,
+		colframe=gray!50,
+		boxrule=.4pt,
+		sharp corners,
+		before skip=8pt, after skip=10pt,
+		lefthand width=7cm,
+		righthand width=5cm,
+		sidebyside gap=4mm,
+		halign lower=center
+	},
+}
+
+\newcommand\cmd[1]{\texttt{\textbackslash #1}}
+\newcommand\opt[1]{\texttt{#1}}
+\newcommand\pkg[1]{\texttt{#1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+
+
+%======================================================================
+% Title
+%======================================================================
+
+\title{The \pkg{vowelchart} package\\[2pt]\large Vowel charts with TikZ}
+\author{Daniel Bunčić \\ \textit{University of Cologne} \\ \texttt{daniel.buncic@uni-koeln.de}\\
+  \url{https://github.com/danielbuncic/vowelchart}}
+\date{Version 1.0 (21 November 2026)}
+
+\begin{document}
+\maketitle
+\setlength{\cftbeforesecskip}{3pt}
+\setlength{\cftbeforesubsecskip}{0pt}
+{\small\tableofcontents}
+\newpage
+
+
+
+
+%======================================================================
+\section{Introduction}
+%======================================================================
+
+\subsection{Features}
+
+The package \pkg{vowelchart}, as the name suggests, helps you draw vowel charts for linguistics. It is indebted to the creators of two older packages, whose work it continues:
+
+\begin{itemize}
+	\item
+	\pkg{vowel} (2001) by Fukui Rei, distributed with \pkg{tipa}, draws the charts with \LaTeX\relax-picture-like primitives. Vowels are placed with \cmd{putvowel} and \cmd{putcvowel}.
+	\item
+	\pkg{pst-vowel} (2009) by Alan Munn adds PSTricks nodes to \pkg{vowel}, so that arrows (e.g.\ for diphthongs) can be drawn between vowels.
+\end{itemize}
+
+\noindent
+However, the package \pkg{vowelchart} differs from the preceding packages in several important respects:
+
+\begin{itemize}
+	\item
+		\textbf{Vector graphics:} In \pkg{vowel}, the slanted lines consist of many tiny squares, which show up as steps at higher resolutions. In \pkg{vowelchart}, every line is a real vector path and stays smooth at any zoom level.
+	\item
+		\textbf{Nodes and TikZ:} Every vowel is a TikZ node. You can draw arrows, shaded areas and annotations with ordinary TikZ commands in the same picture, using a special coordinate system that works for every chart shape.
+	\item
+		\textbf{Exact size:} The chart can be given an exact width or height.
+	\item
+		\textbf{More shapes and grids:} In addition to the shape options of \pkg{vowel}, there are a symmetric and a slanted quadrilateral, and all four corners can be set by hand. Apart from the grid styles of \pkg{vowel}, you can have a triangular central zone without a middle line or a central column resulting in a 3\,×\,3 division.
+	\item
+		\textbf{Relative coordinates:} Vowels are placed with abstract coordinates that follow the shape of the chart, so the same code works in every shape.
+	\item
+		\textbf{Convenient commands:} \cmd{putipavowel} places a vowel simply defined by its IPA symbol (with Unicode or X-SAMPA input) at its usual position in the chart, \cmd{putdiphthong} draws a diphthong arrow between two positions, and \cmd{putipadiphthong} draws it between two vowels given by their IPA symbols or between any mixture of IPA vowels and TikZ nodes.
+	\item
+		\textbf{Colors and line widths:} Foreground and background colors, the line width and the dot size can be set for each chart.
+	\item
+		\textbf{Settings at several levels:} All options can be given for a single chart, for all following charts in a document, or as package options (Section~\ref{sec:optionsets}).
+\end{itemize}
+
+
+
+
+\subsection{Requirements}
+
+The package loads \pkg{tikz}, \pkg{contour} and \pkg{xparse}, and needs a \LaTeX\ kernel from 2020 or later (expl3). With \hologo{XeLaTeX} or \hologo{LuaLaTeX}, choose a font that contains the IPA symbols (for instance Libertinus, Charis SIL or DejaVu). With \hologo{pdfLaTeX}, the IPA characters must be made available by an encoding or font package.
+
+If you load \pkg{vowelchart} together with \pkg{vowel} or \pkg{pst-vowel}, load it \emph{after} them (see Section~\ref{sec:legacy}).
+
+
+
+
+%======================================================================
+\section{Quick start: The general structure}
+%======================================================================
+
+In order to draw vowel charts, you first have to tell \LaTeX{} to use this package:
+\begin{tcblisting}{syntaxbox}
+\usepackage{vowelchart}
+\end{tcblisting}
+
+\noindent
+If the package \pkg{vowelchart} is not part of your \LaTeX{} distribution, all you have to do is copy the file \pkg{vowelchart.sty} to the same folder as your main \pkg{.tex} file.
+
+Then you can create an environment \pkg{vowelchart}, which automatically draws a chart.
+Within this environment, you can then use any of the commands \cmd{putvowel}, \cmd{putcvowel}, \cmd{putipavowel}, \cmd{putdiphthong}, and \cmd{putipadiphthong} to place vowels on the chart.
+You can also use TikZ commands to draw in the chart.
+See the following example.
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}
+  \putvowel[r]{ə}{1.3}{1.7}
+  \putcvowel[l]{iː}{1}
+  \putipavowel{u}[vowelu]
+  \putipavowel{'a'}
+  \putdiphthong[diphlabelpos=on]{iə̯}{0.1}{0.5}{0.9}{1.5}
+  \putipadiphthong{*}{o}{I}
+  \draw[blue, thick] (vowelu) circle (0.4);
+\end{vowelchart}
+\end{tcblisting}
+
+\noindent
+You can change the appearance of the vowel chart by adding parameters. The options you have for this, and the places where you can set them, are laid out in Section~\ref{sec:Options}.
+The exact syntax and properties of the commands for placing vowels are presented in Section~\ref{sec:Commands}.
+Finally, since the vowel chart is a \texttt{tikzpicture}, you can use TikZ commands to easily add graphical elements (and text) to the chart, see Section~\ref{sec:TikZ}.
+
+
+
+
+%======================================================================
+\section{Options: Properties of the vowel chart} \label{sec:Options}
+%======================================================================
+
+\subsection{Where options can be set} \label{sec:optionsets}
+
+All options are given as a comma-separated list of keys, optionally with values (\opt{key=value}). Such a list can be used at three levels:
+
+\begin{tcblisting}{syntaxbox}
+% 1. for a single chart
+\begin{vowelchart}[<options>]
+  <vowel commands and TikZ commands>
+\end{vowelchart}
+
+% 2. for all following charts
+\vowelchartset{<options>}
+
+% 3. for all charts of the document, when loading the package
+\usepackage[<options>]{vowelchart}
+\end{tcblisting}
+
+\noindent
+At the beginning of every chart, first the options given when loading the package and by \cmd{vowelchartset} are applied, in the order in which they were given, and then the options of the chart itself. Within a list, options are processed from left to right. Thus more specific settings always override more general ones, and later settings override earlier ones. Example:
+
+\begin{tcblisting}{syntaxbox}
+\usepackage[slanted, fg=blue!50!black]{vowelchart}   % default for all charts
+...
+\vowelchartset{linewidth=.3pt, fontsize=10pt}        % for all following charts
+...
+\begin{vowelchart}[normal, fg=black, width=5cm]      % this chart only
+\end{tcblisting}
+
+\noindent
+Some remarks:
+
+\begin{itemize}
+	\item
+	\cmd{vowelchartset} acts globally, even inside a group, and the settings accumulate. You cannot delete a default, but you can override it in a chart with the opposite option, e.g.\ \opt{normal} for the default shape, \opt{ipanew} for the default grid style, \opt{four} for the default number of vertical levels, or \opt{bg=white}. An empty value (e.g.\ \opt{labelbg=}) restores the default of the colors for labels (Section~\ref{sec:colorlabels}).
+	\item
+	Shape options set all four corners, so a predefined shape given later overrides corners given before (Section~\ref{sec:shapes}).
+	\item
+	A bare dimension such as \opt{6cm} is a shorthand for \opt{width=6cm}.
+	\item
+	Values containing a comma have to be put in braces, e.g.\ \opt{tl=\{0,0.5\}}.
+\end{itemize}
+
+\noindent
+A complete list of all options with their defaults is given in Section~\ref{app:options}.
+
+
+
+
+\subsection{Shape} \label{sec:shapes}
+
+The shape is defined by four corners: top left (\opt{tl}), top right
+(\opt{tr}), bottom left (\opt{bl}) and bottom right (\opt{br}). The unit is one
+quarter of the width of the default chart; the $y$ axis points downwards. The
+standard shapes (shown in Figure~\ref{fig:corners} and Table~\ref{tab:shapeslines}) set all four corners.
+
+\newcommand\cornerdemo[8]{%
+	\begin{tikzpicture}[x=.4cm, y=.4cm, font=\scriptsize]
+		\useasboundingbox (-1.7,1.9) rectangle (5.1,-3.9);
+		% Gitter und Beschriftung der Spalten (x) ...
+		\foreach \k in {0,...,4}{
+			\draw[gray!50, thin] (\k,1) -- (\k,-3.4);
+			\node[gray, anchor=south] at (\k,1) {\k};
+		}
+		% ... und der Zeilen (y, wächst nach unten)
+		\foreach \k in {0,...,3}{
+			\draw[gray!50, thin] (-1,-\k) -- (4.8,-\k);
+			\node[gray, anchor=east] at (-1,-\k) {\k};
+		}
+		% Achsen
+		\draw[gray, -Latex] (-1,1) -- (5.1,1);
+		\draw[gray, -Latex] (-1,1) -- (-1,-3.9);
+		% Form: tl -- tr -- br -- bl
+		\draw[thick, blue!60!black, fill=blue!15]
+		(#1,-#2) -- (#3,-#4) -- (#7,-#8) -- (#5,-#6) -- cycle;
+		% Eckpunkte
+		\foreach \cx/\cy in {#1/#2, #3/#4, #5/#6, #7/#8}{
+			\fill[blue!60!black] (\cx,-\cy) circle (1.5pt);
+		}
+\end{tikzpicture}}
+
+\begin{figure}[bp]
+	\centering
+	\setlength\tabcolsep{6pt}
+	\begin{tabular}{ccccc}
+		\cornerdemo{0}{0}{4}{0}{2}{3}{4}{3}        % normal
+		& \cornerdemo{0}{0}{4}{0}{0}{3}{4}{3}      % rectangle
+		& \cornerdemo{0}{0}{4}{0}{2}{3}{2}{3}      % triangle
+		& \cornerdemo{0}{0}{4}{0}{1}{3}{3}{3}      % symmetric
+		& \cornerdemo{0}{0}{3.6}{0.7}{2.4}{2.7}{4}{2.7} % slanted
+		\\
+		\texttt{normal} & \texttt{rectangle} & \texttt{triangle}
+		& \texttt{symmetric} & \texttt{slanted}\\
+	\end{tabular}
+	\caption{The coordinate system used for defining the corners
+		(the $y$ axis points downwards)}
+	\label{fig:corners}
+\end{figure}
+
+\begin{center}
+	\begin{tabular}{@{}lcccc@{}}
+		\toprule
+		Option & \opt{tl} & \opt{tr} & \opt{bl} & \opt{br}\\
+		\midrule
+		\opt{normal} (default) & 0, 0 & 4, 0 & 2, 3 & 4, 3 \\
+		\opt{rectangle} & 0, 0 & 4, 0 & 0, 3 & 4, 3\\
+		\opt{triangle} & 0, 0 & 4, 0 & 2, 3 & 2, 3\\
+		\opt{symmetric} & 0, 0 & 4, 0 & 1, 3 & 3, 3\\
+		\opt{slanted} & 0, 0 & 3.6, 0.7 & 2.4, 2.7 & 4, 2.7\\
+		\bottomrule
+	\end{tabular}
+\end{center}
+
+\noindent
+Additionally, you can set the corners of the quadrangle manually.
+
+\begin{tcblisting}{syntaxbox}
+tl={<x>,<y>}   tr={<x>,<y>}   bl={<x>,<y>}   br={<x>,<y>}
+\end{tcblisting}
+
+\noindent
+Corners not mentioned keep the values of the chosen shape, so you can start from
+a standard shape and change a single corner. Since a shape option overwrites
+\emph{all} four corners, it has to come before individual corner options. The
+braces are required, because the comma would otherwise separate options. Values
+are evaluated by pgfmath, so mathematical expressions are allowed.
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[slanted, bl={2.2,3}, width=3cm]\end{vowelchart}\quad
+\end{tcblisting}
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[tl={0, 2/3}, tr={4, 0}, bl={7/3, 2}, br={3, 5/3}, width=3cm]\end{vowelchart}
+\end{tcblisting}
+
+\begin{table}[htb]
+	\newcommand\gcell[2]{%
+		\begin{vowelchart}[width=1.8cm,#1,#2]\end{vowelchart}%
+	}
+	\newcommand\shaperow[5]{%
+		\textbf{\texttt{#1}} \newline\footnotesize (#2) (#3) \newline (#4) (#5)
+		& \gcell{#1}{plain} & \gcell{#1}{simple} & \gcell{#1}{ipanew} & \gcell{#1}{centralzone} & \gcell{#1}{standard} & \gcell{#1}{centralcol} \\[8pt]%
+	}
+	\begin{center}
+		\setlength\tabcolsep{5pt}
+		\begin{tabular}{@{}m{2cm} m{1.8cm} m{1.8cm} m{1.8cm} m{1.8cm} m{1.8cm} m{1.8cm}@{}}
+			& \begin{center}\bfseries\opt{plain}\end{center}
+			& \begin{center}\bfseries\opt{simple}\end{center}
+			& \begin{center}\bfseries\opt{ipanew}\end{center}
+			& \begin{center}\bfseries\opt{central\-zone}\end{center}
+			& \begin{center}\bfseries\opt{standard}\end{center}
+			& \begin{center}\bfseries\opt{central\-col}\end{center}
+			\\[-1em]
+			\shaperow{normal}{0,0}{4,0}{2,3}{4,3}
+			\shaperow{rectangle}{0,0}{4,0}{0,3}{4,3}
+			\shaperow{triangle}{0,0}{4,0}{2,3}{2,3}
+			\shaperow{symmetric}{0,0}{4,0}{1,3}{3,3}
+			\shaperow{slanted}{0, 0}{3.6, 0.7}{2.4, 2.7}{4, 2.7}
+			\\[-0.5em]
+			\textbf{\texttt{three}} \newline\footnotesize (with various \newline shapes)
+			& & \gcell{triangle}{simple,three} & \gcell{normal}{ipanew,three} & \gcell{rectangle}{centralzone,three} & \gcell{symmetric}{standard,three} & \gcell{slanted}{centralcol,three} \\[8pt]%
+		\end{tabular}
+	\end{center}
+	\caption{Options for chart shapes and grid styles}
+	\label{tab:shapeslines}
+\end{table}
+
+
+
+
+\subsection{Grid style}
+\label{sec:Grid}
+
+\begin{center}
+	\begin{tabular}{@{}p{2.5cm}p{13cm}@{}}
+		\toprule
+		Option & Lines\\
+		\midrule
+		\opt{plain} & outline only\\
+		\opt{simple} & outline and horizontal line(s) \\
+		\opt{ipanew} (default) & \opt{simple} plus a vertical center line (as in the current IPA chart)\\
+		\opt{centralzone} & \opt{simple} plus a triangular central zone \\
+		\opt{standard} & \opt{centralzone} plus a vertical line through the middle of the central zone (the name \opt{standard} has been kept from the \pkg{vowel} package) \\
+		\opt{centralcol} & \opt{simple} plus two vertical lines, resulting in a 3\,×\,3 division of the vowel space \\
+		\midrule
+		\opt{four} (default) & four heights are distinguished (i.e.\ two horizontal middle lines are drawn in all styles except \opt{plain}) \\
+		\opt{three} & only three heights (i.e.\ only one horizontal middle line) \\
+		\bottomrule
+	\end{tabular}
+\end{center}
+
+\noindent
+If you need additional lines, you can easily add them with \cmd{draw} commands, using the convenient relative coordinates explained in Section~\ref{sec:putvowel} (see Figure~\ref{fig:coordinates}) via the coordinate system \texttt{vowel cs} (Section~\ref{sec:vowelcs}).
+
+Grid styles and shapes are independent of each other and can be combined freely. Combinations of shapes and grid styles are shown in Table~\ref{tab:shapeslines}.
+
+
+
+
+\subsection{Size}
+\label{sec:Size}
+
+\begin{tcblisting}{syntaxbox}
+width=<dimension>     height=<dimension>     <dimension>
+\end{tcblisting}
+
+\noindent
+\opt{width} sets the exact width and \opt{height} the exact height of the quadrilateral grid (excluding overhanging labels and dots). A bare dimension such as \texttt{[6cm]} is a shorthand for \opt{width}. There is only
+one scale for both directions; the chart is never distorted. If both are given,
+the last one wins. The default is \texttt{width=8em}.
+
+Because \texttt{em} refers to the font size of the chart (the font size at the beginning of the
+environment, after applying the options \opt{font} and \opt{fontsize}), commands such as \cmd{small} or \cmd{Large} before the chart
+scale it together with its symbols unless the size is set with an absolute measure of length. The default line widths and dot sizes are absolute (Section~\ref{sec:linesdots}).
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[height=2cm]
+  \putipavowel{i}
+\end{vowelchart}
+\end{tcblisting}
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[width=1.5cm]
+  \putipavowel{i}
+\end{vowelchart}
+\end{tcblisting}
+
+\begin{tcblisting}{ex}
+{\Large
+  \begin{vowelchart}
+    \putipavowel{i}
+  \end{vowelchart}
+}
+\end{tcblisting}
+
+
+
+
+\subsection{Colors} \label{sec:colors}
+
+\begin{center}
+	\begin{tabular}{@{}p{1.3cm}p{14.2cm}@{}}
+		\toprule
+		Option & Colors \\
+		\midrule
+		\opt{fg} & the foreground color of lines, dots and labels (default: the current text color, usually black) \\
+		\opt{bg} & the background color (default: white) \\
+		\opt{labelbg} & the color of the area cleared behind labels (default: =~\opt{bg}; can also be \opt{off}; see Section~\ref{sec:colorlabels}) \\
+		\opt{contour} & the color of the contour around labels (default: =~\opt{labelbg}; can also be \opt{off}; see Section~\ref{sec:colorlabels}) \\
+		\bottomrule
+	\end{tabular}
+\end{center}
+
+\noindent
+By default, everything is drawn in the current text color on a white background. You can change this by giving color definitions in the variables \opt{bg} for the background color and \opt{fg} for the foreground color. The background color is used for a rectangle behind the whole chart and also for the areas that clear the lines around the labels; it should therefore be the color of the surrounding if you use a transparent-looking chart. Both options accept all color expressions of \pkg{xcolor}, e.g.\ \opt{bg=cyan!15}.
+
+Note that you can use color within vowel charts as well. If you use \cmd{color} before one of the commands for placing vowels, both the dot or arrow and the label will appear in this color.
+If you want to change the color of the label separately from the corresponding dot or arrow, you can use \cmd{color} or \cmd{textcolor} within the label argument of the \cmd{put…} command.
+Inside the chart, \verb|\color{vowelchartfg}| restores the foreground color of the chart (Section~\ref{sec:settings}).
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[bg=lightgray,width=3cm]
+  \putipavowel{i}
+  {\color{red}
+    \putipavowel{u}
+    \putdiphthong{ʊə̯}{1.7}{0.5}{1.1}{1.6}
+  }
+  \putipavowel{a'}
+\end{vowelchart}
+\end{tcblisting}
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[fg=blue!50!black, bg=cyan!15,width=3cm]
+  \putipavowel{i}
+  \putvowel[r]{\color{red} u}{2}{0}
+  \putdiphthong{\textcolor{red}{ʊə̯}}{1.7}{0.5}{1.1}{1.6}
+  \putipavowel{a'}
+\end{vowelchart}
+\end{tcblisting}
+
+\begin{tcblisting}{ex}
+\colorbox{pink}{%
+  \begin{minipage}{5cm}
+    \small A standard vowel chart in a surrounding with a different background color: \medskip \\
+    \begin{vowelchart}[width=2cm]
+      \color{blue}
+      \putdiphthong{\textcolor{red}{aɪ}}{1.5}{2.5}{0.5}{0.5}
+    \end{vowelchart}
+  \end{minipage}
+}
+\end{tcblisting}
+
+
+
+
+\subsection{Font and font size} \label{sec:font}
+
+\begin{tcblisting}{syntaxbox}
+font=<commands>          fontsize=<dimension>
+\end{tcblisting}
+
+\noindent
+The option \opt{font} executes the given font commands at the beginning of the chart, e.g.\ \opt{font=\textbackslash large}, \opt{font=\textbackslash sffamily} or \opt{font=\textbackslash itshape\textbackslash small}. \opt{fontsize} sets a fixed size such as \opt{fontsize=12pt} (the baseline skip becomes 1.2 times the size). Both can be combined; if they set the same property, the later one wins. The font applies to all labels and to the nodes drawn inside the chart. Lengths given in \texttt{em} or \texttt{ex} (the default width, the distances around labels and the line width if you give it in \texttt{em}) refer to this font size, so the whole chart scales with it. Instead of the options, you can also put size commands such as \cmd{Large} before the environment.
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[2cm, fontsize=16pt]
+  \putipavowel{i}
+  \putipavowel{a'}
+  \putipavowel{u}
+\end{vowelchart}
+\end{tcblisting}
+
+
+
+
+\subsection{Line width and dot size} \label{sec:linesdots}
+
+\begin{tcblisting}{syntaxbox}
+linewidth=<dimension>          dotsize=<dimension>
+\end{tcblisting}
+
+\noindent
+\opt{linewidth} sets the width of the lines of the chart (default: \texttt{0.2pt}), \opt{dotsize} the radius of the dots next to vowels placed with \texttt{[l]} or \texttt{[r]} (default: \texttt{1.4pt}). Both are absolute unless you give them in \texttt{em}. (The values are available for your own TikZ code as \cmd{vowelchartline} and \cmd{vowelchartdot}; see Section~\ref{sec:settings}).
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[width=3cm, linewidth=1pt, dotsize=4pt]
+  \putipavowel{i}
+  \putipavowel{u}
+  \putipavowel{a'}
+\end{vowelchart}
+\end{tcblisting}
+
+\noindent
+Further options tune the white areas around the labels and are described in Section~\ref{sec:issue}, and another option is described in Section~\ref{sec:ipadiph}.
+
+
+
+
+%======================================================================
+\section{The commands: Placing vowels} \label{sec:Commands}
+%======================================================================
+
+\subsection{Placement options} \label{sec:placement}
+
+The commands \cmd{putvowel} and \cmd{putcvowel} take a list of options in their first optional argument. The following keys decide how the symbol is placed:
+
+\begin{center}
+	\begin{tabular}{@{}ll@{}}
+		\toprule
+		\texttt{x} (default) & symbol centered on the position, no dot\\
+		\texttt{l} & dot at the position, symbol to the left of the dot\\
+		\texttt{r} & dot at the position, symbol to the right of the dot\\
+		\bottomrule
+	\end{tabular}
+\end{center}
+
+\noindent
+In addition, the keys \opt{labelbg=<color|off>} and \opt{contour=<color|off>} change the colors of the area cleared behind the label (Section~\ref{sec:colorlabels}). The keys are separated by commas (e.g.\ \cmd{putvowel}\texttt{[l, labelbg=\allowbreak yellow]\allowbreak \{e\}\{0\}\{1\}}).
+
+If you leave the \emph{vowel label empty}, only the dot is drawn, which is useful for marking positions (see the example in Section~\ref{sec:ExJones}).
+
+Each command also accepts a trailing optional \emph{node name}. The symbol
+becomes a TikZ node of that name (Section~\ref{sec:nodes}).
+Small horizontal corrections of a single symbol can be made by adding
+\cmd{hspace} inside the symbol argument.
+
+
+
+
+\subsection{\cmd{putvowel}}\label{sec:putvowel}
+
+\begin{tcblisting}{syntaxbox}
+\putvowel[<options>]{<symbol>}{<h>}{<v>}[<node name>]
+\end{tcblisting}
+
+\noindent
+This command places a symbol at the abstract position $(h,v)$. Vowels are not placed with absolute coordinates, but with relative coordinates that follow the shape of the chart, so the same code works in every shape:
+
+\begin{itemize}
+	\item $h$ runs from $0$ (left edge) to $2$ (right edge)
+	\item $v$ runs from $0$ (top edge) to $3$ (bottom edge).
+\end{itemize}
+
+\noindent
+Thus $h=1$ is always on the center line and $v=2$ is always at the height of cardinal [ɛ] and [ɔ], whatever the shape.
+Values outside the ranges are allowed (e.g.\ $h=-0.5$ is left of the chart).
+The same coordinates are used by \cmd{putdiphthong} and by the TikZ coordinate system \texttt{vowel cs} (Section~\ref{sec:vowelcs}).
+
+Figure~\ref{fig:coordinates} marks the $v$ values (blue, along the left and right edges) and the $h$ values (red, along the top and bottom edges) in all five predefined chart shapes and in one user-defined shape.
+
+\begin{figure}[htbp]
+	\centering
+	\newcommand\coorddemo[1]{%
+		\begin{vowelchart}[width=3cm,#1]
+			\color{blue}
+			\node[anchor=east] at (vowel cs:h=0, v=0) {0};
+			\node[anchor=west] at (vowel cs:h=2, v=0) {0};
+			\node[anchor=east] at (vowel cs:h=0, v=1) {1};
+			\node[anchor=west] at (vowel cs:h=2, v=1) {1};
+			\node[anchor=east] at (vowel cs:h=0, v=2) {2};
+			\node[anchor=west] at (vowel cs:h=2, v=2) {2};
+			\node[anchor=east] at (vowel cs:h=0, v=3) {3};
+			\node[anchor=west] at (vowel cs:h=2, v=3) {3};
+			\color{red}
+			\node[anchor=south, inner sep = 1.8] at (vowel cs:h=0, v=0) {0};
+			\node[anchor=north, inner sep = 1.8] at (vowel cs:h=0, v=3) {0};
+			\node[anchor=south, inner sep = 1.8] at (vowel cs:h=2, v=0) {2};
+			\node[anchor=north, inner sep = 1.8] at (vowel cs:h=2, v=3) {2};
+			\node[anchor=south, inner sep = 1.8] at (vowel cs:h=1, v=0) {1};
+			\node[anchor=north, inner sep = 1.8, fill=white] at (vowel cs:h=1, v=3) {1};
+			\draw[blue] (vowel cs:h=0, v=0) -- (vowel cs:h=2, v=0);
+			\draw[blue] (vowel cs:h=0, v=1) -- (vowel cs:h=2, v=1);
+			\draw[blue] (vowel cs:h=0, v=2) -- (vowel cs:h=2, v=2);
+			\draw[blue] (vowel cs:h=0, v=3) -- (vowel cs:h=2, v=3);
+			\draw[red] (vowel cs:h=0, v=0) -- (vowel cs:h=0, v=3);
+			\draw[red] (vowel cs:h=2, v=0) -- (vowel cs:h=2, v=3);
+			\draw[red] (vowel cs:h=1, v=0) -- (vowel cs:h=1, v=3);
+	\end{vowelchart}}
+	\begin{center}
+		\setlength\tabcolsep{12pt}
+		\begin{tabular}{ccc}
+			\coorddemo{normal} & \coorddemo{rectangle} & \coorddemo{triangle}\\
+			\texttt{normal} & \texttt{rectangle} & \texttt{triangle}\\[14pt]
+			\coorddemo{symmetric} & \coorddemo{slanted} & \coorddemo{tl={0,0}, tr={4,1}, bl={2,3}, br={3,2.5}}\\
+			\texttt{symmetric} & \texttt{slanted} & \texttt{tr=\{4,1\}, br=\{3,2.5\}}\\
+		\end{tabular}
+	\end{center}
+	\caption{The relative coordinate system, independent of chart shape}
+	\label{fig:coordinates}
+\end{figure}
+
+If you use the shape option \opt{triangle} and you want to place a vowel at the very bottom at $v=3$, the $h$ coordinate, logically, has no effect; however, by setting $h=1$ anyway you ensure that this will still be an open \textit{central} vowel if the chart is ever displayed in a different shape.
+
+Example:
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[width=5cm]
+  \putvowel[l]{ɛ}{0}{2}[vowele]
+  \putvowel[r]{ɔ}{2}{2}
+  \putvowel{ə}{1}{1.5}
+\end{vowelchart}
+\end{tcblisting}
+
+\noindent
+For charts created with \pkg{vowel}, a legacy variant with absolute coordinates exists (Section~\ref{sec:legacy}).
+
+
+
+
+\subsection{\cmd{putcvowel}}\label{sec:putcvowel}
+
+\begin{tcblisting}{syntaxbox}
+\putcvowel[<options>]{<symbol>}{<n>}[<node name>]
+\end{tcblisting}
+
+\noindent
+This places a symbol at cardinal position $n=1,\dots,16$. Positions 1--8 are those
+of Daniel Jones's cardinal vowels; 9--16 are extended positions for the other
+vowels of the IPA chart. The default node name is \texttt{v}$n$.
+The positions are given in the relative coordinates of Section~\ref{sec:putvowel} and thus follow the shape of the chart.
+
+\begin{center}
+	\begin{vowelchart}[width=5cm,simple]
+		\foreach \n in {1,...,16} {\putcvowel{\n}{\n}}
+	\end{vowelchart}
+\end{center}
+
+\begin{center}\small
+	\begin{tabular}{@{}c|cccccccccccccccc@{}}
+		\toprule
+		$n$ & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 & 12 & 13 & 14 & 15 & 16 \\[0.5em]
+		$h$ & 0 & 0 & 0 & 0 & 2 & 2 & 2 & 2 & 1 & 1 & 1 & 1 & 0.5 & 1.5 & 1 & 0\\
+		$v$ & 0 & 1 & 2 & 3 & 3 & 2 & 1 & 0 & 0 & 1 & 1.5 & 2 & 0.5 & 0.5 & 2.5 & 2.5\\
+		\bottomrule
+	\end{tabular}
+\end{center}
+
+
+
+
+\needspace{5em}
+\subsection{\cmd{putipavowel}}\label{sec:putipavowel}
+
+\begin{tcblisting}{syntaxbox}
+\putipavowel[<options>][<label>]{<IPA or X-SAMPA symbol>}[<node name>]
+\end{tcblisting}
+
+\noindent
+This command places a vowel at its place in the IPA chart. It also typesets the IPA symbol (even if your input is X-SAMPA); if you want something else to appear
+(e.g.\ a length mark or brackets), put it in the optional \texttt{<label>}, which replaces the default symbol. The shape of the chart does not matter. For symbols that share a position, the
+dot is at the same place and the symbols stand on its left (unrounded) or
+right (rounded) side; \texttt{ə} and \texttt{ɐ} normally have no dot.
+
+The command has two optional arguments before the symbol. If only one is given, it is the \texttt{<label>}. If two are given, the first one holds the \texttt{<options>} for this vowel and the second one the \texttt{<label>}, which may be empty (\verb|[]|) to draw only the dot. If you want to give options but keep the default label, repeat the symbol as the label, e.g.\ \verb|\putipavowel[labelbg=yellow][e]{e}|.
+
+The position of the symbol is determined by the input in the obligatory argument, which can be the IPA symbol in Unicode (works in \hologo{XeLaTeX} and \hologo{LuaLaTeX}) or the corresponding X-SAMPA code (with a few exceptions due to illegal characters).
+The input \verb|a'|, \verb|ae'|, \verb|e'|, etc.\ selects the non-canonical but widely practiced use of [a] for an open \textit{central} vowel and of [æ] for an \textit{open} front vowel and places e, ɛ, o, ɔ, ø and œ as \textit{mid} vowels. You can also place ə and ɐ on the left or right of a dot by using \verb|'|.
+See Table~\ref{tab:ipavowels} for all possible input characters. An unknown symbol in this argument raises an error.
+
+\begin{table}[htbp]
+	\small
+	\begin{longtable}{llccc}
+		\toprule
+		IPA & Accepted input & $h$ & $v$ & dot\\
+		\midrule\endhead
+		i & \verb|i| & 0 & 0 & l\\
+		y & \verb|y| & 0 & 0 & r\\
+		ɨ & \verb|ɨ, 1| & 1 & 0 & l\\
+		ʉ & \verb|ʉ, u-, \}| & 1 & 0 & r\\
+		ɯ & \verb|ɯ, M| & 2 & 0 & l\\
+		u & \verb|u| & 2 & 0 & r\\
+		ɪ & \verb|ɪ, I| & 0.33 & 0.5 & l\\
+		ʏ & \verb|ʏ, Y| & 0.33 & 0.5 & r\\
+		ʊ & \verb|ʊ, U| & 1.67 & 0.5 & r\\
+		e & \verb|e| & 0 & 1 & l\\
+		e (mid) & \verb|e'| & 0 & 1.5 & l\\
+		ø & \verb|ø, 2| & 0 & 1 & r\\
+		ø (mid) & \verb|ø', 2'| & 0 & 1.5 & r\\
+		ɘ & \verb|ɘ, @-| & 1 & 1 & l\\
+		ɵ & \verb|ɵ, 8| & 1 & 1 & r\\
+		ɤ & \verb|ɤ, 7| & 2 & 1 & l\\
+		o & \verb|o| & 2 & 1 & r\\
+		o (mid) & \verb|o'| & 2 & 1.5 & r\\
+		ə & \verb|ə, @| & 1 & 1.5 & --\\
+		ə (unrounded) & \verb|ə', @'| & 1 & 1.5 & l\\
+		ə (rounded) & \verb|'ə, '@| & 1 & 1.5 & r\\
+		ɛ & \verb|ɛ, E| & 0 & 2 & l\\
+		ɛ (mid) & \verb|ɛ', E'| & 0 & 1.5 & l\\
+		œ & \verb|œ, oe, 9| & 0 & 2 & r\\
+		œ (mid) & \verb|œ', oe', 9'| & 0 & 1.5 & r\\
+		ɜ & \verb|ɜ, 3| & 1 & 2 & l\\
+		ɞ & \verb|ɞ, 3-| & 1 & 2 & r\\
+		ʌ & \verb|ʌ, V| & 2 & 2 & l\\
+		ɔ & \verb|ɔ, O| & 2 & 2 & r\\
+		ɔ (mid) & \verb|ɔ', O'| & 2 & 1.5 & r\\
+		æ & \verb|æ, ae, \{| & 0 & 2.5 & l\\
+		æ (open) & \verb|æ', ae', \{'| & 0 & 3 & l\\
+		ɐ & \verb|ɐ, 6| & 1 & 2.5 & --\\
+		ɐ (unrounded) & \verb|ɐ', 6'| & 1 & 2.5 & l\\
+		ɐ (rounded) & \verb|'ɐ, '6| & 1 & 2.5 & r\\
+		a & \verb|a| & 0 & 3 & l\\
+		a (central) & \verb|a'| & 1 & 3 & l\\
+		a (central, no dot) & \verb|'a'| & 1 & 3 & --\\
+		ɶ & \verb|ɶ, &, OE| & 0 & 3 & r\\
+		ɑ & \verb|ɑ, A| & 2 & 3 & l\\
+		ɒ & \verb|ɒ, Q| & 2 & 3 & r\\
+		\bottomrule
+	\end{longtable}
+	\caption{Predefined IPA vowels}
+	\label{tab:ipavowels}
+\end{table}
+
+The \texttt{<options>} in the first of the two optional arguments can contain \opt{labelbg} and \opt{contour} (Section~\ref{sec:colorlabels}), the settings listed in Table~\ref{tab:whitespace}, and \opt{l}, \opt{r} or \opt{x}, which override the position of the label that is predefined for the symbol.
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[width=4cm, font=\large]
+  \putipavowel[iː]{i}
+  \putipavowel[/u/]{u}[vu]
+  \putipavowel{O}
+  \putipavowel[a/aː]{'a'}
+  \putipavowel[]{o} % empty label → only dot
+  \putipavowel[x][ɛ]{E} % options, then label
+\end{vowelchart}
+\end{tcblisting}
+
+
+
+
+\subsection{\cmd{putdiphthong}}\label{sec:diph}
+
+\begin{tcblisting}{syntaxbox}
+\putdiphthong[<TikZ options>]{<label>}{<h1>}{<v1>}{<h2>}{<v2>}[<node name>]
+\end{tcblisting}
+
+\noindent
+This draws an arrow from $(h_1,v_1)$ to $(h_2,v_2)$ in the relative coordinates (see Section~\ref{sec:putvowel}). The optional label runs along the
+arrow, centered, always readable: TikZ turns the text by $180^\circ$ if it would
+be upside down, so it stands to the right of an arrow pointing to the upper
+left and to the left of an arrow pointing to the upper right. The label is
+protected from the lines of the chart by a contour (Section~\ref{sec:issue}). Use \verb|{}| as the label for an arrow without label.
+
+The first optional argument holds TikZ options for this one arrow; besides the usual TikZ keys, it accepts \opt{labelbg} and \opt{contour} (Section~\ref{sec:colorlabels}). Furthermore, the position of the label relative to the arrow is set with the option \opt{diphlabelpos}, which can be given here, in the properties of the chart, with \cmd{vowelchartset}, or when loading the package (Section~\ref{sec:optionsets}):
+
+\begin{tcblisting}{syntaxbox}
+diphlabelpos=above|below|on
+\end{tcblisting}
+
+\noindent
+\opt{above} (the default) puts the label on the upper side of the arrow, \opt{below} on the lower side, \opt{on} puts the label on the arrow so that the arrow runs through the middle of the x-height (the arrow is interrupted by the label's contour, Section~\ref{sec:issue}).
+
+The \texttt{<node name>} belongs to the label node in the middle of the arrow. If you give a name but no label, an empty node of that name is placed in the middle of the arrow; with neither, no node is created.
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[width=5cm]
+  \putdiphthong{}{0.95}{2.7}{0.35}{0.5} % no label
+  \putdiphthong[dashed]{ɔ͜ɪ}{1.8}{1.8}{0.4}{0.5}
+  \putdiphthong[diphlabelpos=on]{a͜ʊ}{1.05}{2.7}{1.7}{0.5}
+\end{vowelchart}
+\end{tcblisting}
+
+\noindent
+The appearance of arrow and label is controlled by these TikZ styles:
+
+\begin{tcblisting}{syntaxbox}
+\tikzset{
+  vc diph label/.style={sloped, midway, inner sep=0pt},
+  vc diph above/.style={above=0.5pt},   % used by diphlabelpos=above
+  vc diph below/.style={below=0.15em},  % used by diphlabelpos=below
+  vc diph on/.style={anchor=base},      % used by diphlabelpos=on}
+}
+\end{tcblisting}
+
+\noindent
+You can redefine them with \cmd{tikzset}, e.g.\ \verb|\tikzset{vc diph label/.append style={pos=0.35}}|
+(label closer to the start).
+\texttt{vc diph} can also be used for your own arrows between nodes.
+
+
+
+
+
+\subsection{\cmd{putipadiphthong}}\label{sec:ipadiph}
+
+\begin{tcblisting}{syntaxbox}
+\putipadiphthong[<TikZ options>]{<label>}{<start>}{<end>}[<node name>]
+\end{tcblisting}
+
+\noindent
+This command works like \cmd{putdiphthong}, but start and end of the arrow are not given as numbers. Each of them is either
+
+\begin{itemize}
+	\item
+	an IPA or X-SAMPA symbol from Table~\ref{tab:ipavowels} (e.g.\ \texttt{a'}, \texttt{I}, \texttt{ʊ}): the arrow starts or ends at the position of this vowel in the IPA chart, even if no vowel has been placed there; or
+	\item
+	a TikZ coordinate \emph{in parentheses}: a node such as \verb|(vu)|, a node with anchor such as \verb|(vu.south)|, \verb|(vowel cs:h=1,v=2)| or \verb|(2,-1)|.
+\end{itemize}
+
+\noindent
+The two kinds can be mixed, e.g.\ to draw an arrow from a node of your own to an IPA vowel. The parentheses decide which kind is meant, so a node named \texttt{i} cannot be confused with the vowel i.
+
+The label \texttt{*} is replaced by the two IPA symbols of the start and the end, joined by the tie bar (U+035C) that is used in the transcription of diphthongs, as in \textit{a͜ɪ}. This works only if both ends are symbols. The tie is stored in the macro \cmd{vowelchartdiphtie}; \verb|\renewcommand\vowelchartdiphtie{}| removes it.
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[width=5cm]
+  \putipadiphthong{*}{a'}{I}
+  \putvowel[r]{u}{1.8}{0.3}[vu]
+  \putipadiphthong[red, diphlabelpos=below]{ɔ͜u}{O}{(vu.south)}
+\end{vowelchart}
+\end{tcblisting}
+
+\noindent
+Arrows that end at an IPA position are shortened at both ends by the length given in the option
+
+\begin{tcblisting}{syntaxbox}
+ipashorten=<dimension>          % default: 3pt
+\end{tcblisting}
+
+\noindent
+so that they do not touch the dot or the vowel at this position. Ends at nodes or coordinates are not shortened beyond the 1\,pt of the style \texttt{vc diph}. For a single arrow, you can override this with TikZ options, e.g.\ \verb|\putipadiphthong[shorten >=0pt]{...}{a'}{I}|.
+
+
+
+
+
+% ===============================================================================
+\section{Using TikZ in the vowel chart} \label{sec:TikZ}
+% ===============================================================================
+
+Since the chart is a \texttt{tikzpicture}, everything TikZ offers is available inside the environment. This section explains how to refer to positions and nodes in the chart and which settings of the chart you can use in your own code.
+
+\subsection{Nodes}\label{sec:nodes}
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[slanted, width=5cm]
+  \putipavowel{i}[vi]
+  \putipavowel{u}[vu]
+  \putipavowel{a}[va]
+  \draw[vc diph, red]  (vi.south) to[bend right=20] (va.north west);
+  \draw[vc diph, blue] (vu.south west) -- (va.north east);
+\end{vowelchart}
+\end{tcblisting}
+
+\noindent
+Without a name, the symbol gets an automatic node name (\texttt{vcauto1},
+\texttt{vcauto2}, \dots); \cmd{putcvowel} names its nodes \texttt{v1}, \dots, \texttt{v16} by default. These names should not be used for nodes of your own. Nodes are local to their picture, so the same names
+may be used in different charts. Use only ASCII letters and digits in node names (no dot, colon or comma). A node is the symbol's \emph{label}
+(a box one \texttt{ex} high, with its baseline half an \texttt{ex} below the dot), not the dot. If a vowel should be known under a second name, use TikZ's \verb|\pgfnodealias{<new name>}{<name>}| after placing it.
+
+
+
+
+\subsection{The coordinate system \texttt{vowel cs}}\label{sec:vowelcs}
+
+\begin{tcblisting}{syntaxbox}
+(vowel cs:h=<h>, v=<v>)          (vowel cs:x=<h>, y=<v>)
+\end{tcblisting}
+
+\noindent
+This is a TikZ coordinate system with the relative coordinates of Section~\ref{sec:putvowel} ($h$ from 0 to 2 across, $v$ from 0 to 3 down, see Figure~\ref{fig:coordinates}). It can be used wherever TikZ expects a
+coordinate, and it follows the shape and size of the chart. \texttt{x} and \texttt{y} are synonyms of \texttt{h} and \texttt{v};
+missing values are $0$. It works only inside \texttt{vowelchart}.
+With \texttt{\textbackslash usetikzlibrary\{calc\}}, offsets are possible: \verb|($(vowel cs:h=1,v=1)+(0,-.3)$)|.
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[slanted, width=4cm]
+  \draw[blue, thick]
+  (vowel cs:h=0,v=1.5) -- (vowel cs:h=2,v=1.5);
+  \node[anchor=west, xshift=1mm]
+  at (vowel cs:h=2,v=1.5) {mid};
+\end{vowelchart}
+\end{tcblisting}
+
+\noindent
+Plain TikZ coordinates $(x,y)$ also work inside the chart, but they do not follow the shape. Their unit is one quarter of the width of the default shape, and the $y$ axis points \emph{upwards}, so that the chart lies at negative $y$ values: a corner given as \texttt{br=\{4,3\}} is the point \texttt{(4,-3)}. Figure~\ref{fig:tikzcoords} shows this absolute coordinate system for the predefined shapes. Use \texttt{vowel cs} for everything that should stay in place if the shape changes.
+
+\newcommand\tikzcoorddemo[8]{%
+	\begin{tikzpicture}[x=.4cm, y=.4cm, font=\scriptsize]
+		\useasboundingbox (-1.5,1.9) rectangle (5.5,-3.9);
+		% Gitterlinien und Beschriftung der x-Werte (über der x-Achse)
+		\foreach \k in {1,...,4}{
+			\draw[gray!50, thin] (\k,0.3) -- (\k,-3.4);
+			\node[gray, anchor=south] at (\k,0.2) {\k};
+		}
+		% Gitterlinien und Beschriftung der y-Werte (links der y-Achse, negativ nach unten)
+		\foreach \k/\l in {1/{$-1$}, 2/{$-2$}, 3/{$-3$}}{
+			\draw[gray!50, thin] (-0.3,-\k) -- (4.4,-\k);
+			\node[gray, anchor=east] at (-0.2,-\k) {\l};
+		}
+		% Ursprung
+		\node[gray, anchor=south east] at (-0.1,0.1) {0};
+		% Achsen: x nach rechts auf y=0, y nach oben auf x=0
+		\draw[gray, -Latex] (-0.8,0) -- (5,0) node[anchor=west] {$x$};
+		\draw[gray, -Latex] (0,-3.5) -- (0,1) node[anchor=south] {$y$};
+		% Form: tl -- tr -- br -- bl, y negiert
+		\draw[thick, blue!60!black]
+		(#1,-#2) -- (#3,-#4) -- (#7,-#8) -- (#5,-#6) -- cycle;
+		% Eckpunkte
+		\foreach \cx/\cy in {#1/#2, #3/#4, #5/#6, #7/#8}{
+			\fill[blue!60!black] (\cx,-\cy) circle (1.5pt);
+		}
+\end{tikzpicture}}
+
+\begin{figure}[htbp]
+	\centering
+	\setlength\tabcolsep{3pt}
+	\begin{tabular}{ccccc}
+		\tikzcoorddemo{0}{0}{4}{0}{2}{3}{4}{3}
+		& \tikzcoorddemo{0}{0}{4}{0}{0}{3}{4}{3}
+		& \tikzcoorddemo{0}{0}{4}{0}{2}{3}{2}{3}
+		& \tikzcoorddemo{0}{0}{4}{0}{1}{3}{3}{3}
+		& \tikzcoorddemo{0}{0}{3.6}{0.7}{2.4}{2.7}{4}{2.7}
+		\\
+		\texttt{normal} & \texttt{rectangle} & \texttt{triangle}
+		& \texttt{symmetric} & \texttt{slanted}\\
+	\end{tabular}
+	\caption{The absolute coordinate system for TikZ commands inside a
+		\texttt{vowelchart}. The $y$ axis points upwards, so the chart lies at
+		negative $y$ values: a corner given as \texttt{br=\{4,3\}} is the point
+	\texttt{(4,-3)}.}
+	\label{fig:tikzcoords}
+\end{figure}
+
+
+
+
+\subsection{Using the chart's settings in your own code}\label{sec:settings}
+
+Inside the environment, the settings of the chart are available under the following names. TikZ commands that use them follow any change of design automatically.
+
+\begin{center}\small
+	\begin{tabular}{@{}llp{10.2cm}@{}}
+		\toprule
+		Name & Kind & Meaning (set by)\\
+		\midrule
+		\cmd{vowelchartline} & length & line width of the chart (\opt{linewidth}) \\
+		\cmd{vowelchartdot} & length & radius of the dots (\opt{dotsize}) \\
+		\texttt{vowelchartfg} & color & foreground color (\opt{fg}; default: the text color at the beginning of the chart) \\
+		\texttt{vowelchartbg} & color & background color (\opt{bg}) \\
+		\texttt{vc bg} & style & fills with the background color: \verb|\node[vc bg]{...}| \\
+		\texttt{vc diph}, \texttt{vc diph label} & styles & arrows and arrow labels (Section~\ref{sec:diph}) \\
+		\cmd{vowelchartdiphtie} & macro & tie bar of automatic diphthong labels (Section~\ref{sec:ipadiph}) \\
+		\cmd{vowelhunit}, \cmd{vowelvunit} & lengths & the unit of the chart (for legacy charts, see Section~\ref{sec:legacy}) \\
+		\bottomrule
+	\end{tabular}
+\end{center}
+
+\noindent
+The colors and lengths hold the values set by the options (or their defaults), so they are only meaningful inside the environment. After you have changed the color with \cmd{color}, \verb|\color{vowelchartfg}| restores the chart's foreground color.
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[fg=blue!50!black, bg=cyan!10, linewidth=.4pt, width=4cm]
+  \draw[line width=2\vowelchartline, vowelchartfg!50]
+  (vowel cs:h=0,v=1.5) -- (vowel cs:h=2,v=1.5);
+  \putvowel[l]{e}{0.3}{1.2}
+  \draw[vowelchartfg] (vowel cs:h=0.3,v=1.8) circle (\vowelchartdot);
+  \putvowel[x]{ɛ}{0.17}{1.8}
+\end{vowelchart}
+\end{tcblisting}
+
+
+
+
+\subsection{Further possibilities}
+
+Here are just a few more ideas what you can do with a vowel chart and TikZ:
+
+\begin{itemize}
+	\item
+		\textbf{Colour:} put \cmd{color} or a group before the chart,
+		(e.g.\ \texttt{\{\cmd{color}\{gray\}\cmd{begin}\{vowelchart\} ... \cmd{end}\{vowelchart\}\}}), to color lines, dots and symbols (or use the option \opt{fg}).
+		Inside the chart, \cmd{color} or a \texttt{scope} colors what follows.
+	\item
+		\textbf{Shading and highlighting:} fill regions with
+		\cmd{fill}\texttt{[blue, opacity=.15] (vowel cs:h=0,v=0) -- ... -- cycle;}. Labels that are placed on a colored area can be given the same background (Section~\ref{sec:colorlabels}).
+	\item
+		\textbf{Annotations:} \cmd{node} with \texttt{vowel cs}, or placed relative
+		to the vowel nodes, e.g. \verb|(voweli.north)|.
+	\item
+		\textbf{Arrows and curves:} \cmd{draw} between nodes or coordinates, with
+		\texttt{to[bend left]}, \texttt{dashed}, arrow tips from \texttt{arrows.meta}, etc.
+	\item
+		\textbf{Offsets:} with the \texttt{calc} library, use
+		\verb|($(vowel cs:h=1,v=1)+(0,-.3)$)|.
+	\item
+		\textbf{Styles:} change \texttt{vc diph} and \texttt{vc diph label}
+		globally (Section~\ref{sec:diph}).
+\end{itemize}
+
+\noindent
+Note that \cmd{begin\{vowelchart\}} takes no TikZ options; use \cmd{tikzset} or scopes for
+global settings. The size of the chart cannot be changed with \texttt{scale};
+use \opt{width} or \opt{height}, which keep the size of the symbols.
+The bounding box of the picture includes all nodes, including labels outside the
+chart.
+
+
+
+\subsection{Changing the white areas for colored backgrounds} \label{sec:colorlabels}
+
+If you draw colored areas in the chart with TikZ, the white areas behind the labels would stand out. For this case, the color of the cleared areas can be changed or switched off with two keys:
+
+\begin{center}
+	\begin{tabular}{@{}lp{12.8cm}@{}}
+		\toprule
+		Key & Effect\\
+		\midrule
+		\opt{labelbg=<color>} & color of the box behind the label, of the strip between a dot and its label and of the field behind central vowels (default: the chart background \opt{bg})\\
+		\opt{labelbg=off} & none of these three is drawn\\
+		\opt{contour=<color>} & color of the contour around the label (default: the same color as \opt{labelbg}; with \opt{labelbg=off}, the chart background)\\
+		\opt{contour=off} & no contour is drawn\\
+		\bottomrule
+	\end{tabular}
+\end{center}
+
+\noindent
+With \opt{labelbg=off} (and \opt{contour=off}), lines run through the label; this makes sense for labels that stand outside the lines or on areas where you take care of the clearing yourself.
+
+The keys can be given on every level:
+
+\begin{tcblisting}{syntaxbox}
+% for an individual label:
+  \putvowel[l, labelbg=yellow]{e}{0}{1}
+  \putcvowel[l, labelbg=yellow]{e}{2}
+  \putipavowel[labelbg=yellow][e]{e}
+  \putdiphthong[contour=off]{...}
+  \putipadiphthong[contour=off]{...}
+% for all following labels in a chart:
+  \vowelchartlabels{labelbg=yellow}
+% for all labels in a chart:
+  \begin{vowelchart}[contour=off]
+% for all charts:
+  \usepackage{vowelchart}[labelbg=off]
+  \vowelchartset{labelbg=yellow}
+\end{tcblisting}
+
+\noindent
+A setting for a single label overrides the settings of the higher levels. An empty value (\opt{labelbg=}) restores the default.
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[width=4.5cm, font=\large]
+  \fill[yellow, opacity=.4] (vowel cs:h=0,v=1) -- (vowel cs:h=2,v=1) -- (vowel cs:h=2,v=2) -- (vowel cs:h=0,v=2) -- cycle;
+  \putipavowel[labelbg=yellow!40!vowelchartbg][ə]{ə}
+  \putdiphthong[contour=off]{ɔ͜ɪ}{1.9}{1.9}{0.5}{0.4}
+  \putipavowel{ʊ}
+\end{vowelchart}
+\end{tcblisting}
+
+\noindent
+Note that a translucent area (\texttt{opacity=.4}) produces a mixed color. To make the cleared areas match, use the mixture itself, as in the example: yellow at 40\,\% on the chart background is \texttt{yellow!40!vowelchartbg}.
+
+
+
+
+% ===============================================================================
+\section{Compatibility with \pkg{vowel} and \pkg{pst-vowel}}\label{sec:compat}
+% ===============================================================================
+
+\subsection{Moving from \pkg{(pst-)vowel} to \pkg{vowelchart}}
+
+The package \pkg{vowelchart} neither requires or changes \pkg{vowel} or \pkg{pst-vowel}.
+The environment is called \texttt{vowelchart} instead of \texttt{vowel}. The homonymous commands \cmd{putvowel} and \cmd{putcvowel} as well as the new commands \cmd{putipavowel}, \cmd{putdiphthong} and \cmd{putipadiphthong} are defined \textit{only inside} the \texttt{vowelchart} environment. In \texttt{vowel} environments the commands of \pkg{vowel} and \pkg{pst-vowel} keep working, so old and new charts can coexist in the same document.
+
+For an overview of the differences between the three packages, see Table~\ref{tab:compatibility}.
+
+\begin{table}[htbp]
+	\centering\small
+	\renewcommand\arraystretch{1.15}
+	\begin{tabular}{@{}L{2.6cm}L{3.7cm}L{3.7cm}L{4.6cm}@{}}
+		\toprule
+		& \pkg{vowel} & \pkg{pst-vowel} & \pkg{vowelchart}\\
+		\midrule
+		Output & built from boxes and tiny squares & = \pkg{vowel} & TikZ vector paths \smallskip \\
+		Engines & any & \LaTeX+dvips (PSTricks) & \hologo{LuaLaTeX}, \hologo{XeLaTeX}, \hologo{pdfLaTeX} \smallskip \\
+		Size & \cmd{vowelhunit}, \cmd{vowelvunit}, font size & = \pkg{vowel} & \opt{width=}, \opt{height=}, font size (\cmd{vowelhunit} and \cmd{vowelvunit} still work for legacy charts) \smallskip \\
+		Chart shapes & quadrangle, rectangle, triangle & = \pkg{vowel} & + slanted, symmetric, freely defined corners \smallskip \\
+		Grid options & plain, simple, standard, ipanew; three & = \pkg{vowel} & + centralzone, centralcol (+~TikZ) \smallskip \\
+		Vowel placement & \cmd{putvowel} with absolute coordinates & = \pkg{vowel} & \cmd{putvowel} with relative coordinates (and \cmd{putvowel*} with absolute coordinates for legacy charts) \smallskip \\
+		Cardinal vowels & \cmd{putcvowel}$\{\ldots\}\{n\}$ & = \pkg{vowel} & = \pkg{vowel} \smallskip \\
+		IPA vowels & --- & --- & \cmd{putipavowel} with Unicode or \mbox{X-SAMPA} input \smallskip \\
+		Nodes & none & obligatory (PSTricks) & optional (TikZ) \smallskip \\
+		Arrows & none & PSTricks & \cmd{putdiphthong}, \cmd{putipadiphthong}, TikZ \\
+		\bottomrule
+	\end{tabular}
+	\caption{Comparison of packages displaying vowel charts}
+	\label{tab:compatibility}
+\end{table}
+
+If you already have vowel charts created with \pkg{vowel} (with or without \pkg{pst-vowel}), you can transfer them to this package in the following steps:
+
+\begin{enumerate}
+	\item
+		Rename the environment: \verb|\begin{vowel}| $\to$ \verb|\begin{vowelchart}|.
+		The options \opt{plain}, \opt{simple}, \opt{standard}, \opt{ipanew}, \opt{rectangle}, \opt{triangle} and \opt{three} keep their names.
+	\item
+		\cmd{putcvowel} needs no change, including the optional \texttt{[l]} and \texttt{[r]}.
+	\item
+		\cmd{putvowel} changes: the coordinates of the new command are no longer absolute lengths but relative coordinates, see Section~\ref{sec:putvowel}.
+		The easiest way to convert the coordinates is to read the position off the old chart and estimate its relative position by eye. For a more mathematical approach, see Sections \ref{sec:vowel2rel} and~\ref{sec:spreadsheet}.
+		If you do not want to convert the coordinates at all, the legacy command \cmd{putvowel*} (Section~\ref{sec:legacy}) accepts the old absolute coordinates unchanged.
+	\item
+		The size of the chart is set with \opt{width=} or \opt{height=}. For compatibility, font size commands can still be used to change the chart’s size, and the default width of \texttt{8em} equals \pkg{vowel}’s default of \texttt{2em} per unit. (\cmd{vowelhunit} and \cmd{vowelvunit} are also still understood, see Section~\ref{sec:legacy}.)
+	\item
+		The options \opt{noerase}, \opt{t} and \opt{b} are not supported. The chart can be aligned with \cmd{raisebox}.
+	\item
+		\pkg{vowel} allows different values for \cmd{vowelhunit} and \cmd{vowelvunit}, which distorts the chart. This is not supported. If both are set, \cmd{vowelhunit} wins. (A distorted chart can be created by moving the corners, see Section~\ref{sec:shapes}.)
+\end{enumerate}
+
+
+
+
+\needspace{5em}
+\subsection{Legacy: absolute coordinates with \cmd{putvowel*}}\label{sec:legacy}
+
+\begin{tcblisting}{syntaxbox}
+\putvowel*[l|r|x]{<symbol>}{<x>}{<y>}[<node name>]
+\end{tcblisting}
+
+\noindent
+\textbf{This command exists only to make old charts work with a minimum of changes. It is not recommended for new charts.} Use the relative coordinates of \cmd{putvowel} (Section~\ref{sec:putvowel}) or the IPA positions of \cmd{putipavowel} (Section~\ref{sec:putipavowel}) instead.
+
+With the star, \cmd{putvowel*} takes the same absolute coordinates as in \pkg{vowel}: lengths measured from the top left corner of the default chart, with the $y$ axis pointing downwards, usually multiples of \cmd{vowelhunit} and \cmd{vowelvunit}. A chart created with \pkg{vowel} can therefore be converted by renaming the environment and adding a star to every \cmd{putvowel}. If the chart was created with \pkg{pst-vowel}, the node name, which was the last obligatory argument there, must in addition be moved into square brackets:
+
+\begin{tcblisting}{syntaxbox}
+% vowel.sty
+\putvowel[l]{ɛː/ɛ}{1.33\vowelhunit}{2\vowelvunit}
+% vowelchart
+\putvowel*[l]{ɛː/ɛ}{1.33\vowelhunit}{2\vowelvunit}
+
+% pst-vowel.sty
+\putvowel[l]{ɛː/ɛ}{1.33\vowelhunit}{2\vowelvunit}{Elongshort}
+% vowelchart
+\putvowel*[l]{ɛː/ɛ}{1.33\vowelhunit}{2\vowelvunit}[Elongshort]
+\end{tcblisting}
+
+\noindent
+The starred command \cmd{putvowel*} accepts the same options as the normal \cmd{putvowel} (Section~\ref{sec:putvowel}), and the new options of \pkg{vowelchart} for changing size, colors, grid styles, etc., and for adding TikZ commands are available.
+Note, however, that the chart \textit{shape} cannot be changed without the vowels placed with \cmd{putvowel*} ending up in the wrong places.
+For technical reasons, the additional white field that clears the center line behind central vowels (see Section~\ref{sec:issue}) is not drawn with \cmd{putvowel*} (which is not a problem in most cases; where it is, just use the unstarred version to place the vowel instead.)
+
+
+
+
+
+%======================================================================
+\section{A known problem and some solutions} \label{sec:issue}
+%======================================================================
+
+The space that the lines leave for vowel symbols written over them is created by white boxes and contours (or boxes and contours in the background color of the chart) drawn around the symbols, which are drawn after the lines and thus erase them.
+The size of these boxes and contours has been tweaked as much as possible to erase only those lines that should be erased.
+However, vowel symbols placed near diagonal lines can occasionally cause ugly missing bits in those diagonals, see the diagram below.
+(This is a problem that \pkg{vowel} sometimes had as well.)
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[slanted] % with tricky labels
+  \putvowel[l]{eː}{0.06}{0.8}
+  \putvowel[x]{ɑː/ɑ}{2}{2.6}
+\end{vowelchart}
+\end{tcblisting}
+
+\noindent
+To prevent this, you have three options. \textbf{First}, you can use \cmd{hspace} or \cmd{vspace} with positive or negative values within the label argument of \cmd{putvowel}  (e.g.\ \verb|\putvowel[l]{\hspace{1.5pt}i}{0.1}{0.1}|) to move the label into a position where the problem does not occur; see the following diagram.
+
+\begin{tcblisting}{ex}
+  \begin{vowelchart}[slanted] % corrected by moving the labels
+  \putvowel[l]{\hspace{-1.1em}eː}{0.06}{0.8}
+  \putvowel[x]{\hspace{-5pt}ɑː/ɑ}{2}{2.6}
+\end{vowelchart}
+\end{tcblisting}
+
+\noindent
+\enlargethispage{1\baselineskip}%
+\textbf{Second}, you might want to tweak the size of the areas that are cleared for the labels. It can be changed with the options listed in Table \ref{tab:whitespace}. They are given like all other options (Section~\ref{sec:optionsets}), i.e.\ after \verb|\begin{vowelchart}| for a single chart, with \cmd{vowelchartset} for all following charts, as a package option, or (except for \opt{diphlabelpos}) in the options of a single vowel command, for example \verb|\putvowel[l,pad=6pt]{e}{0.06}{0.8}| or \verb|\putipavowel[pad=6pt][u]{u}|. An option given in a vowel command only applies to this vowel, so that you can make more space for one label without affecting any others. For \cmd{putdiphthong} and \cmd{putipadiphthong}, \opt{diphmargin}, \opt{labelbg}, and \opt{contour} can be given in the TikZ options.
+Lengths given in \texttt{em} or \texttt{ex} refer to the font size of the chart, so the cleared areas grow and shrink together with the symbols.
+
+\begin{table}[htbp]
+	\begin{center}\small
+		\renewcommand\arraystretch{1.2}
+		\begin{tabular}{@{}llp{12cm}@{}}
+			\toprule
+			Option & Default & Effect\\
+			\midrule
+			\opt{margin}     & \texttt{0.06em} & Width of the contour around the glyphs. It clears the lines
+			right at the outline of each symbol and is the main protection above and below
+			the symbols.\\
+			\opt{pad}        & \texttt{0.10em} & The white box behind each symbol is this much wider than the
+			symbol on each side.\\
+			\opt{boxh}, \opt{boxd} & \texttt{1ex}, \texttt{0pt} & Height above and depth below the baseline of this
+			box. By default it reaches from the baseline to the x-height; the contour
+			takes care of ascenders and descenders.\\
+			\opt{gap}        & \texttt{0.18em} & Distance between the symbol and the dot next to it
+			(labels placed with \texttt{[l]} or \texttt{[r]}).\\
+			\opt{lift}       & \texttt{0.5ex}   & The baseline of a label lies this far below the dot (or the
+			position of a label placed with \texttt{[x]}).\\
+			\opt{stripe}     & \texttt{1.5pt}  & Thickness of the white strip between a dot and its label that removes the piece of the horizontal line that would otherwise remain there.\\
+			\opt{zonew}, \opt{zoneh} & \texttt{0.7em}, \texttt{1em} & Size of the white field that is drawn behind central vowels
+			(see below). The field also covers a piece of any horizontal line close to the vowel; for a vowel at the very top or bottom of the chart (e.g.\ \cmd{putcvowel[x]} at position 9), choose a smaller \opt{zoneh}, or switch the field off with \texttt{zoneh=0pt}.\\
+			\opt{labelbg} & \texttt{bg} & Color of the white box and of the strip behind the labels. \texttt{labelbg=off} switches the box off (Section~\ref{sec:colorlabels}).\\
+			\opt{contour} & as \opt{labelbg} & Color of the contour around the glyphs. \texttt{contour=off} switches the contour off (Section~\ref{sec:colorlabels}).\\
+			\opt{diphmargin} & \texttt{0.15em} & Width of the contour around the label of a diphthong arrow.\\
+			\bottomrule
+		\end{tabular}
+	\end{center}
+	\caption{Variables determining the white space around vowel labels}
+	\label{tab:whitespace}
+\end{table}
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[slanted] % with adjusted options
+  \putvowel[l, labelbg=off, contour=off]{eː}{0.06}{0.8}
+  \putvowel[x, boxh=.7em, boxd=2pt]{ɑː/ɑ}{2}{2.6}
+\end{vowelchart}
+\end{tcblisting}
+
+\noindent\textit{Remedies for typical problems:}
+\begin{itemize}
+	\item
+	A line runs too close to a symbol, or remains between the parts of a symbol such as “(ɨ)”:
+	Increase \opt{pad}. Increase \opt{margin} if the line touches the outline of the glyph.
+	\item
+	A diagonal line has a notch next to a symbol:
+	The white box or the contour is too large for this position. Decrease \opt{pad} and, if necessary, \opt{margin}, or move the label with \cmd{hspace} as described above. This happens most often in strongly slanted shapes.
+	\item
+	Descenders cut into a diagonal line, or a line runs through the descender:
+	A positive \opt{boxd} (e.g.\ \texttt{0.2ex}) clears the area below the baseline but also removes more of the line there.
+	\item
+	A bit of a horizontal line remains between a dot and its label, especially in slanted charts:
+	Increase \opt{stripe}. In slanted vowel charts the horizontal lines are slightly tilted, so a thicker strip is needed. Do not choose a thickness larger than necessary, because it also removes parts of neighboring lines.
+	\item
+	The label sits too close to or too far from its dot:
+	Change \opt{gap}.
+	\item
+	All labels sit too high or too low relative to their dots:
+	Change \opt{lift}.
+	\item
+	The central vowels ([ə], [ɐ], and central [a], and more generally any symbol placed with \texttt{[x]} at \texttt{h=1}) stand on the center line, which is nearly vertical and runs through the symbol. To keep the line away from them, a white rectangle of size \opt{zonew}\,$\times$\,\opt{zoneh} is drawn in the background color, centered on the position of the symbol, before the symbol is set. Increase \opt{zonew} if a piece of the center line remains left or right of the symbol, and decrease \opt{zoneh} if the rectangle removes too much of a horizontal line near the symbol. With \texttt{zoneh=0pt} the field is switched off. It is not drawn for symbols placed next to a dot (\texttt{[l]}, \texttt{[r]}) or for empty symbols.
+\end{itemize}
+
+\noindent
+\textbf{Third}, you can add TikZ commands, e.g.\ to draw a white rectangle over a line to make more space for a vowel label or to redraw a line that should not have been erased, as in the following example.
+
+\begin{tcblisting}{ex}
+% With corrections using TikZ
+\begin{vowelchart}[slanted]
+  \putvowel[l]{eː}{0.06}{0.8}
+  % Redraw line AFTER adding the vowel label for [eː]:
+  \draw[line width=\vowelchartline] (vowel cs:h=0,v=0) -- (vowel cs:h=0,v=3);
+  % Make space BEFORE adding the vowel label for [ɑː/ɑ]:
+  \fill[vowelchartbg] (vowel cs:h=1.75,v=2.3) rectangle (vowel cs:h=2.25,v=2.9);
+  \putvowel[x]{ɑː/ɑ}{2}{2.6}
+\end{vowelchart}
+\end{tcblisting}
+
+
+
+
+
+%======================================================================
+\section{The mathematics behind it}\label{sec:math}
+%======================================================================
+
+This chapter is not needed to use the package. The formulas given below are only useful if (a)~you want to know exactly what \cmd{putvowel} does with its arguments (\ref{sec:rel2real}), (b)~you want to convert a diagram from \pkg{vowel} to the new relative coordinates and the positions of the vowels have to be accurate to the millimetre (\ref{sec:vowel2rel}), or (c)~you have to convert a large amount of old data (\ref{sec:spreadsheet}).
+
+ 
+
+\subsection{How \pkg{vowelchart} turns relative into real coordinates}
+\label{sec:rel2real}
+
+A chart is defined by four corners $P_\mathrm{tl}$, $P_\mathrm{tr}$, $P_\mathrm{bl}$ and $P_\mathrm{br}$ (top left, top right, bottom left, bottom right; see Section~\ref{sec:shapes}). Each corner is a pair $(x,y)$, where $y$ increases \emph{downwards}.
+A position in the chart is given by the relative coordinates $h\in[0,2]$ (from left to right) and $v\in[0,3]$ (from top to bottom). For the calculation, it is more convenient to express both as fractions of the way across the chart. We call them $s$ and $t$:
+\[
+s=\frac h2,\qquad t=\frac v3 .
+\]
+So $s$ is $0$ at the left edge and $1$ at the right edge, and $t$ is $0$ at the top edge and $1$ at the bottom edge. A point with $h=0.5$ and $v=1$, for example, has $s=0.25$ and $t=\frac13$: it lies a quarter of the way from the left to the right and a third of the way from the top to the bottom.
+
+The package then works in two steps. First, it determines the two points on the left and on the right edge of the chart at the height~$v$, namely the points that are the fraction~$t$ of the way from the top corner to the bottom corner:
+\[
+L=P_\mathrm{tl}+t\,(P_\mathrm{bl}-P_\mathrm{tl}),\qquad
+R=P_\mathrm{tr}+t\,(P_\mathrm{br}-P_\mathrm{tr}).
+\]
+Second, it goes the fraction~$s$ of the way from $L$ to $R$: $P=L+s\,(R-L)$. Written as one formula, this is
+\[
+P(h,v)=(1-s)(1-t)\,P_\mathrm{tl}+s(1-t)\,P_\mathrm{tr}+(1-s)\,t\,P_\mathrm{bl}+s\,t\,P_\mathrm{br}.
+\]
+Each corner is weighted by how close the point is to it. This is a bilinear interpolation between the four corners.
+This formula is used for all shapes, for the coordinate system \texttt{vowel cs} (Section~\ref{sec:vowelcs}) and for all vowel placement commands.
+
+The corners are given in the unit of the chart. Its length~$u$ is derived from the option \opt{width} or \opt{height} (Section~\ref{sec:Options}) and the extent of the four corners:
+\[
+u=\frac{\text{width}}{x_{\max}-x_{\min}}\qquad\text{or}\qquad
+u=\frac{\text{height}}{y_{\max}-y_{\min}},
+\]
+where $x_{\max}$, $x_{\min}$, $y_{\max}$, and $y_{\min}$ are the largest and smallest $x$ and $y$ values of the four corners. The point $P=(X,Y)$ is drawn at the TikZ position $(u\cdot X,\,-u\cdot Y)$; the minus sign is needed because TikZ's $y$ axis points upwards.
+
+\paragraph{Example.}
+For the default shape \opt{normal}, the corners are $(0,0)$, $(4,0)$, $(2,3)$ and $(4,3)$, so that
+\[
+X=\frac{2v}{3}+2h-\frac{hv}{3},\qquad Y=v.
+\]
+The vowel at $h=0.5$, $v=1$ is therefore at $X=\tfrac23+1-\tfrac16=1.5$ and $Y=1$. In a chart with \texttt{width=4cm} this is $u=1\,$cm, i.e.\ 1.5\,cm to the right of and 1\,cm below the top left corner.
+
+
+
+\subsection{From absolute \pkg{vowel} coordinates to relative \pkg{vowelchart} coordinates}
+\label{sec:vowel2rel}
+
+In \pkg{vowel}, the position of a vowel is a pair of lengths $(x,y)$, measured from the top left corner of the chart. To convert such a pair to the relative coordinates $(h,v)$ of \cmd{putvowel}, divide both lengths by the units of the old chart:
+\[
+a=\frac{x}{\text{\cmd{vowelhunit}}},\qquad b=\frac{y}{\text{\cmd{vowelvunit}}} .
+\]
+If the old code gave the coordinates in multiples of the units (such as \texttt{1.5\textbackslash vowelhunit} and \texttt{1\textbackslash vowelvunit}), $a$ and $b$ are simply these numbers (here $a=1.5$ and $b=1$). Then the new coordinates are calculated with the formulas in the following table. The vertical coordinate $v$ only depends on $b$. The horizontal coordinate $h$ depends on $a$ and, except for the rectangle, also on $b$, because the left and right edge of the chart are slanted. The formulas for \opt{three} differ because \pkg{vowel} draws such a chart only two units of \cmd{vowelvunit} high (and uses a correspondingly larger unit), so that the overall height stays the same.
+
+\begin{center}
+	\begin{tabular}{@{}lcc@{}}
+		\toprule
+		& four heights (default) & \opt{three}\\
+		\midrule
+		$v$ for all shapes & $b$ & $1.5\,b$\\[6pt]
+		$h$ for \opt{normal} & $\displaystyle\frac{3a-2b}{6-b}$ & $\displaystyle\frac{2a-2b}{4-b}$\\[8pt]
+		$h$ for \opt{rectangle} & $\displaystyle\frac{a}{2}$ & $\displaystyle\frac{a}{2}$\\[8pt]
+		$h$ for \opt{triangle} & $\displaystyle\frac{3a-2b}{6-2b}$ & $\displaystyle\frac{a-b}{2-b}$\\
+		\bottomrule
+	\end{tabular}
+\end{center}
+
+\noindent
+For the triangle, the formulas are undefined at the apex (the bottom of the chart), where every~$h$ describes the same point. Set $h=1$ in this case.
+
+The formulas also describe the position correctly if the new chart is larger or smaller than the old one, because $h$ and $v$ only state where a point lies \emph{within} the quadrilateral. But note that the new chart always keeps the proportions of its shape, whereas \pkg{vowel} allowed \cmd{vowelhunit} and \cmd{vowelvunit} to be set independently of each other.
+(If you want to reproduce this effect, you have to adjust the corners of the chart; see Section~\ref{sec:shapes}.)
+
+\paragraph{Check.}
+In a chart with four heights, the point $a=1.5$, $b=1$ gives $v=1$ and, for the shape \opt{normal}, $h=\frac{4.5-2}{5}=0.5$. The following chart draws this point twice, once with the legacy command \cmd{putvowel*} (Section~\ref{sec:legacy}) with absolute coordinates and once with \cmd{putvowel} (Section~\ref{sec:putvowel}) with relative coordinates; the two dots coincide:
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[width=4cm, simple]
+  \putvowel*[l]{old}{1.5\vowelhunit}{1\vowelvunit}
+  \putvowel[r]{new}{0.5}{1}
+\end{vowelchart}
+\end{tcblisting}
+
+
+
+\subsection{Converting many coordinates in a spreadsheet}
+\label{sec:spreadsheet}
+
+If a large amount of data has to be converted from \pkg{vowel} to \pkg{vowelchart}, a spreadsheet application such as Excel, LibreOffice Calc, Google Sheets, OnlyOffice Docs, or Numbers can be used:
+
+\begin{enumerate}
+	\item Enter the old $x$ coordinates in column~A and the old $y$ coordinates in column~B, starting in row~2. They have to be plain numbers in multiples of \cmd{vowelhunit} and \cmd{vowelvunit}. If you have lengths (for example in centimetres), divide them by the values of \cmd{vowelhunit} and \cmd{vowelvunit} first.
+	\item Enter the formula for $v$ from the following table in cell C2 and the formula for $h$ for your shape in cell D2.
+	\item Copy both cells down to the last row. Column~C then contains the new $v$ values and column~D the new $h$ values, which you can use in \cmd{putvowel}.
+\end{enumerate}
+
+\begin{center}
+	\begin{tabular}{@{}lll@{}}
+		\toprule
+		Cell & four heights (default) & \opt{three}\\
+		\midrule
+		C2 ($v$) & \texttt{=B2} & \texttt{=3/2*B2}\\
+		D2 ($h$), \opt{normal} & \texttt{=(3*A2-2*B2)/(6-B2)} & \texttt{=(2*A2-2*B2)/(4-B2)}\\
+		D2 ($h$), \opt{rectangle} & \texttt{=A2/2} & \texttt{=A2/2}\\
+		D2 ($h$), \opt{triangle} & \texttt{=IF(B2>=3,1,(3*A2-2*B2)/(6-2*B2))} & \texttt{=IF(B2>=2,1,(A2-B2)/(2-B2))}\\
+		\bottomrule
+	\end{tabular}
+\end{center}
+
+\noindent
+The formulas for the vertical coordinates and for the horizontal ones in \opt{normal} and \opt{rectangle} contain only the basic operations, so they work in every spreadsheet.
+
+The formulas for the horizontal coordinate in \opt{triangle} use the function \texttt{IF} to deal with the apex of the triangle (the bottom of the chart): there, every $h$ describes the same point, and the formula would end with a division by zero. \texttt{IF} returns the value~1 (the middle of the chart) when $B2$ is at least~3 (four heights) or~2 (\opt{three}), i.e.\ when the old $y$ coordinate is the bottom end of the chart, and calculates $h$ with the formula from the table otherwise.
+These formulas are written for spreadsheets in English. In other language versions, two things can differ. First, many versions translate the names of functions; \texttt{IF} is, for example, \texttt{WENN} in German, \texttt{SI} in French and Spanish, \texttt{SE} in Italian, \texttt{ALS} in Dutch, and \texttt{ЕСЛИ} in Russian (whereas other versions use only English function names, e.g.\ \texttt{IF} in Ukrainian Excel). Second, the arguments of a function can be separated by a semicolon instead of a comma. For example, the formula for the triangle with four heights in the German version of Excel reads \texttt{=WENN(B2>=3;1;(3*A2-2*B2)/(6-2*B2))}. Instead of translating the formula, you can also switch the program to English function names: in LibreOffice Calc with the option \emph{Use English function names} in the formula options, in Google Sheets with the option \emph{Always use English function names} in the spreadsheet settings.
+You might also simply accept a “division by zero” error and use \texttt{=(3*A2-2*B2)/(6-2*B2)} (for four heights) or \texttt{=(A2-B2)/(2-B2)} (for the option \opt{three}).
+
+
+
+
+%======================================================================
+\section{Examples}
+%======================================================================
+
+\subsection*{Full IPA vowel chart}
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}
+  \putipavowel{i} \putipavowel{y} \putipavowel{1}
+  \putipavowel{u-} \putipavowel{M} \putipavowel{u}
+  \putipavowel{I} \putipavowel{Y} \putipavowel{U}
+  \putipavowel{e} \putipavowel{2} \putipavowel{@-}
+  \putipavowel{8} \putipavowel{7} \putipavowel{o}
+  \putipavowel{@} \putipavowel{E} \putipavowel{9}
+  \putipavowel{3} \putipavowel{3-} \putipavowel{V}
+  \putipavowel{O} \putipavowel{ae} \putipavowel{6}
+  \putipavowel{a} \putipavowel{OE} \putipavowel{A}
+  \putipavowel{Q}
+\end{vowelchart}
+\end{tcblisting}
+
+
+
+\subsection*{Standard German monophthongs and diphthongs}
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[width=4cm]
+  \large
+  \putipavowel[iː]{i} \putipavowel[yː]{y} \putipavowel[uː]{u}
+  \putipavowel{I} \putipavowel{Y} \putipavowel{U}
+  \putipavowel[eː]{e} \putipavowel[øː]{ø} \putipavowel[oː]{o}
+  \putipavowel[ɛ/ɛː]{ɛ} \putipavowel{œ} \putipavowel{O}
+  \putipavowel{@} \putipavowel{6}
+  \putipavowel[a/aː]{'a'}
+  \putdiphthong{ɔ͜ʏ}{1.8}{1.8}{0.45}{0.6}
+  \putdiphthong{a͜ʊ}{1.1}{2.8}{1.67}{0.6}
+  \putdiphthong{a͜ɪ}{0.9}{2.8}{0.25}{0.6}
+\end{vowelchart}
+\end{tcblisting}
+
+\subsection*{A chart with labels on the axes}
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[width=3cm, simple]
+  \begin{scope}[font=\footnotesize]
+    \node[anchor=south, yshift=4mm] at (vowel cs:h=0, v=0) {front};
+    \node[anchor=south, yshift=4mm] at (vowel cs:h=1, v=0) {central};
+    \node[anchor=south, yshift=4mm] at (vowel cs:h=2, v=0) {back};
+    \node[anchor=west] at (-2, 0) {close};
+    \node[anchor=west] at (-2, -1) {close-mid};
+    \node[anchor=west] at (-2, -2) {open-mid};
+    \node[anchor=west] at (-2, -3) {open};
+  \end{scope}
+  \putipavowel{i} \putipavowel{ɨ} \putipavowel{u}
+  \putipavowel{e} \putipavowel{o} \putipavowel{ə}
+  \putipavowel{ɛ} \putipavowel{ɔ} \putipavowel{ɐ}
+  \putipavowel{a} \putipavowel{ɒ}
+\end{vowelchart}
+\end{tcblisting}
+
+\subsection*{Vowel quadrilateral according to Daniel Jones with ten cardinal vowel zones}
+\label{sec:ExJones}
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[slanted, plain, linewidth=1.5pt, dotsize=2.5pt, width=5cm]
+  % Draw internal lines; the triangle erases the line drawn previously
+  \draw[line width=0.5pt] (vowel cs:h=0, v=1.5) -- (vowel cs:h=2, v=1.5);
+  \draw[line width=0.5pt, fill=vowelchartbg] (vowel cs:h=0.667, v=0) -- (vowel cs:h=1, v=2.5) -- (vowel cs:h=1.333, v=0) -- cycle;
+  \draw[line width=0.5pt] (vowel cs:h=0, v=0.5) -- (vowel cs:h=2, v=0.5);
+  \draw[line width=0.5pt] (vowel cs:h=0, v=2.5) -- (vowel cs:h=2, v=2.5);
+  \draw[line width=0.5pt] (vowel cs:h=1, v=2.5) -- (vowel cs:h=1, v=3);
+  % Place vowel symbols in the middle of the zones
+  \putvowel{i}{0.333}{0.3} \putvowel{u}{1.667}{0.3}
+  \putvowel{e}{0.388}{1} \putvowel{o}{1.611}{1}
+  \putvowel{ɛ}{0.444}{2} \putvowel{ɔ}{1.556}{2}
+  \putvowel{a}{0.5}{2.75} \putvowel{ɑ}{1.5}{2.75}
+  \putvowel{ɨ}{1.001}{0.3} \putvowel{ə}{1.001}{1.5}
+  % Place dots for cardinal vowels 1 to 9
+  \putcvowel[x]{}{1} \putcvowel[x]{}{2} \putcvowel[x]{}{3} \putcvowel[x]{}{4} \putcvowel[x]{}{5} \putcvowel[x]{}{6} \putcvowel[x]{}{7} \putcvowel[x]{}{8} \putcvowel[x]{}{9}
+  % Redraw top outer line
+  \draw[line width=\vowelchartline] (vowel cs:h=0, v=0) -- (vowel cs:h=2, v=0);
+\end{vowelchart}
+\end{tcblisting}
+
+
+\subsection*{The Great Vowel Shift}
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[width=4cm, plain]
+  \tikzset{GVC/.style={red, thick, ->, shorten >=2pt, shorten <=2pt}}
+  \putvowel[l]{aː}{0.7}{3}[a] \putipavowel[ɛː]{ɛ}[E]
+  \putipavowel[eː]{e}[e] \putipavowel[iː]{i}[i]
+  \putdiphthong{a͜ɪ}{0.9}{2.5}{0.3}{0.5}[ai]
+  \putipavowel[ɔː]{ɔ}[O] \putipavowel[oː]{o}[o]
+  \putipavowel[uː]{u}[u]
+  \putdiphthong{a͜ʊ}{1.1}{2.5}{1.7}{0.5}[au]
+  \draw[GVC] (a.west) to[bend left=30] (E.south);
+  \draw[GVC] (E.north west) to[bend left=30] (e.south);
+  \draw[GVC] (e.north west) to[bend left=30] (i.south);
+  \draw[GVC] (i.east) to[bend left=30] (ai.north west);
+  \draw[GVC] (O.north east) to[bend right=30] (o.south east);
+  \draw[GVC] (o.north east) to[bend right=30] (u.south east);
+  \draw[GVC] (u.west) to[bend right=30] (au.north east);
+\end{vowelchart}
+\end{tcblisting}
+
+
+\subsection*{Shaded vowel space}
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[width=4cm, simple, bg=black!5!white]
+  \putcvowel{i}{1} \putcvowel{e}{2} \putcvowel{ɛ}{3} \putcvowel{a}{4}
+  \putcvowel{ɑ}{5} \putcvowel{ɔ}{6} \putcvowel{o}{7} \putcvowel{u}{8}
+  \fill[blue, opacity=.12]
+  (vowel cs:h=0.3,v=0.3) -- (vowel cs:h=1.7,v=0.3) -- (vowel cs:h=1.9,v=2.2)
+  -- (vowel cs:h=1,v=2.8) -- (vowel cs:h=0.2,v=2) -- cycle;
+  {\vowelchartlabels{contour=blue!12!vowelchartbg, labelbg=blue!12!vowelchartbg}
+    \putvowel{ə}{1}{1}
+    \putdiphthong[red]{a͜o}{0.7}{2.9}{1.9}{1.2}
+  }
+  \putvowel[x]{ɨ}{0.8}{0}
+\end{vowelchart}
+\end{tcblisting}
+
+\subsection*{The same vowels in different shapes}
+
+\begin{tcblisting}{ex}
+\def\demo#1{%
+  \begin{vowelchart}[#1, width=3cm]
+    \putipavowel{i}
+    \putipavowel{u}
+    \putipavowel{'a'}
+    \putipavowel{ə}
+  \end{vowelchart}%
+}
+\demo{rectangle}\\[1em]
+\demo{symmetric}\\[1em]
+\demo{slanted}
+\end{tcblisting}
+
+\subsection*{A three-height system on a triangular chart}
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[triangle, simple, three, width=4.5cm, font=\Large]
+  \putvowel{i}{0}{0}   \putvowel{u}{2}{0}
+  \putvowel{e}{0}{1.5} \putvowel{o}{2}{1.5}
+  \putvowel{a}{1}{3}
+\end{vowelchart}
+\end{tcblisting}
+
+\subsection*{Diphthong arrows used for illustrating sound change}
+
+\begin{tcblisting}{ex}
+\begin{vowelchart}[plain, width=4.5cm, font=\Large]
+  \putvowel[x]{\textit{ū}}{2}{0}[ulong]
+  \putvowel[x]{\textit{ŭ}}{1.75}{0.67}[ushort]
+  \putvowel[x]{\textit{ō}}{2}{1.33}[olong]
+  \putvowel[x]{\textit{ŏ}}{1.75}{2}[oshort]
+  \putvowel[x]{\textit{ȳ}}{0}{0}[ylong]
+  \putvowel[x]{\textit{y̆}}{0.25}{0.67}[yshort]
+  \putvowel[x]{\textit{œ̄}}{0}{1.33}[oelong]
+  \putvowel[x]{\textit{œ̆}}{0.25}{2}[oeshort]
+  \putipadiphthong{}{(ulong.west)}{(ylong.east)}
+  \putipadiphthong{}{(ushort.west)}{(yshort.east)}
+  \putipadiphthong{}{(olong.west)}{(oelong.east)}
+  \putipadiphthong{}{(oshort.west)}{(oeshort.east)}
+\end{vowelchart}
+\end{tcblisting}
+
+
+
+
+
+
+\newpage
+%======================================================================
+\section*{Appendix: Short reference of commands and options} \label{app:options}
+%======================================================================
+\addcontentsline{toc}{section}{Appendix: Short reference of commands and options}
+
+\subsection*{Syntax}
+
+\begin{tcblisting}{syntaxbox}
+\usepackage[<options>]{vowelchart}
+\vowelchartset{<options>}
+\vowelchartlabels{<label options>}
+
+\begin{vowelchart}[<options>]
+         \putvowel[<vowel options>]{<label>}{<h>}{<v>}[<node name>]
+        \putvowel*[<vowel options>]{<label>}{<x>}{<y>}[<node name>]
+        \putcvowel[<vowel options>]{<label>}{<number>}[<node name>]
+      \putipavowel[<vowel options>][<label>]{<symbol>}[<node name>]
+     \putdiphthong[<TikZ options>] {<label>}{<h1>}{<v1>}{<h2>}{<v2>}[<node name>]
+  \putipadiphthong[<TikZ options>] {<label>}{<start>}{<end>}[<node name>]
+\end{vowelchart}
+\end{tcblisting}
+
+\noindent
+The arguments in square brackets are optional.
+\begin{itemize}
+	\item
+	\texttt{<options>} are the chart options of the table below. \cmd{vowelchartset} and the package options set defaults for all charts; options in the environment apply to one chart (Section~\ref{sec:optionsets}).
+	\item
+	\texttt{<vowel options>} are \opt{l}, \opt{r} or \opt{x} (position of the label relative to the dot) and all options marked \emph{vowel} in the last column of the table. They apply to this vowel only.
+	\item
+	\cmd{putipavowel} has two optional arguments before the symbol. If only one is given, it is the \texttt{<label>}; with two, the first one holds the \texttt{<vowel options>} and the second one the \texttt{<label>} (which can be empty for a dot without label).
+	\item
+	\texttt{<label options>} are \opt{labelbg=} and \opt{contour=}; they are set for the labels that follow, up to the end of the current group (Section~\ref{sec:colorlabels}).
+	\item
+	\texttt{<h>}, \texttt{<v>} are relative coordinates ($0\ldots2$ and $0\ldots3$, Section~\ref{sec:putvowel}), \texttt{<x>}, \texttt{<y>} are lengths (legacy, Section~\ref{sec:legacy}), \texttt{<number>} is the number of a cardinal vowel (1--16, Section~\ref{sec:putcvowel}), \texttt{<symbol>} an IPA or X-SAMPA vowel symbol (Table~\ref{tab:ipavowels}).
+	\item
+	\texttt{<start>} and \texttt{<end>} are IPA symbols or TikZ coordinates in parentheses, such as \texttt{(vowel cs:h=1,v=2)} or \texttt{(name.west)} (Section~\ref{sec:ipadiph}).
+	\item
+	\texttt{<TikZ options>} are passed to the arrow; the options \opt{labelbg=}, \opt{contour=}, \opt{diphmargin=} and \opt{diphlabelpos=} can be given there as well.
+\end{itemize}
+
+\subsection*{Options}
+
+All options can be given for a single chart, with \cmd{vowelchartset} or as package options (Section~\ref{sec:optionsets}). The column \emph{Single} shows which options can also be given in the options of an individual command: \emph{vowel} stands for the vowel commands (\cmd{put\dots vowel}) and \emph{diphthong}\ for \cmd{putdiphthong} and \cmd{putipadiphthong} (in their TikZ options). An option marked \emph{---} has to be set at least for the whole chart.
+
+\newpage
+\begin{longtable}{@{}L{4.1cm}L{1.9cm}L{5.3cm}L{1.8cm}l@{}}
+	\toprule
+	Option & Default & Effect & Command & Section\\
+	\midrule\endhead
+	\multicolumn{5}{@{}l}{\textit{Shape}}\\
+	\opt{normal}, \opt{rectangle}, \opt{triangle}, \opt{symmetric}, \opt{slanted} & \opt{normal} & predefined shapes (set all four corners) & --- & \ref{sec:shapes}\\
+	\opt{tl=\{x,y\}}, \opt{tr}, \opt{bl}, \opt{br} & from shape & individual corners & --- & \ref{sec:shapes}\\[6pt]
+	\multicolumn{5}{@{}l}{\textit{Grid lines and dots}}\\
+	\opt{plain}, \opt{simple}, \opt{ipanew}, \opt{centralzone}, \opt{standard}, \opt{centralcol} & \opt{ipanew} & line pattern & --- & \ref{sec:Grid}\\
+	\opt{three}, \opt{four} & \opt{four} & number of heights & --- & \ref{sec:Grid}\\
+	\opt{linewidth=}$\langle$dim$\rangle$ & \texttt{0.2pt} & line width & --- & \ref{sec:linesdots}\\
+	\opt{dotsize=}$\langle$dim$\rangle$ & \texttt{1.4pt} & dot radius & --- & \ref{sec:linesdots}\\[6pt]
+	\multicolumn{5}{@{}l}{\textit{Size}}\\
+	\opt{width=}$\langle$dim$\rangle$ & \texttt{8em} & exact width of the quadrilateral & --- & \ref{sec:Size}\\
+	\opt{height=}$\langle$dim$\rangle$ & --- & exact height of the quadrilateral & --- & \ref{sec:Size}\\
+	$\langle$dim$\rangle$ & --- & shorthand for \opt{width} & --- & \ref{sec:Size}\\[6pt]
+	\multicolumn{5}{@{}l}{\textit{Colors}}\\
+	\opt{fg=}$\langle$color$\rangle$ & text color & foreground color & --- & \ref{sec:colors}\\
+	\opt{bg=}$\langle$color$\rangle$ & \texttt{white} & background color & --- & \ref{sec:colors}\\
+	\opt{labelbg=}$\langle$color$|$off$\rangle$ & \opt{bg} & color of the areas cleared behind labels & vowel, diphthong & \ref{sec:colorlabels}\\
+	\opt{contour=}$\langle$color$|$off$\rangle$ & as \opt{labelbg} & color of the contour around labels & vowel, diphthong & \ref{sec:colorlabels}\\[6pt]
+	\multicolumn{5}{@{}l}{\textit{Font}}\\
+	\opt{font=}$\langle$commands$\rangle$ & --- & font commands for the chart & --- & \ref{sec:font}\\
+	\opt{fontsize=}$\langle$dim$\rangle$ & --- & fixed font size & --- & \ref{sec:font}\\[6pt]
+	\multicolumn{5}{@{}l}{\textit{Position of a label (only in the options of a vowel command)}}\\
+	\opt{l}, \opt{r}, \opt{x} & \opt{x} & label left of, right of, or centered on the dot & \textit{only} vowel & \ref{sec:placement}\\[6pt]
+	\multicolumn{5}{@{}l}{\textit{White areas around labels}}\\
+	\opt{margin=}$\langle$dim$\rangle$ & \texttt{0.06em} & width of the contour & vowel & \ref{sec:issue}\\
+	\opt{pad=}$\langle$dim$\rangle$ & \texttt{0.10em} & extra width of the white box & vowel & \ref{sec:issue}\\
+	\opt{boxh=}, \opt{boxd=} & \texttt{1ex}, \texttt{0pt} & height and depth of the white box & vowel & \ref{sec:issue}\\
+	\opt{gap=}$\langle$dim$\rangle$ & \texttt{0.18em} & distance between label and dot & vowel & \ref{sec:issue}\\
+	\opt{lift=}$\langle$dim$\rangle$ & \texttt{0.5ex} & height of the baseline below the dot & vowel & \ref{sec:issue}\\
+	\opt{stripe=}$\langle$dim$\rangle$ & \texttt{1.5pt} & thickness of the strip next to dots & vowel & \ref{sec:issue}\\
+	\opt{zonew=}, \opt{zoneh=} & \texttt{0.7em}, \texttt{1em} & size of the field behind central vowels & vowel & \ref{sec:issue}\\[6pt]
+	\multicolumn{5}{@{}l}{\textit{Diphthongs}}\\
+	\opt{diphmargin=}$\langle$dim$\rangle$ & \texttt{0.15em} & width of the contour around diphthong labels & diphthong & \ref{sec:issue}\\
+	\opt{diphlabelpos=}$\langle$above$|$\allowbreak below$|$on$\rangle$ & \texttt{above} & position of diphthong labels & diphthong & \ref{sec:diph}\\
+	\opt{ipashorten=}$\langle$dim$\rangle$ & \texttt{3pt} & shortening of arrows ending at IPA positions & --- & \ref{sec:ipadiph}\\
+	\bottomrule
+\end{longtable}
+
+\end{document}
