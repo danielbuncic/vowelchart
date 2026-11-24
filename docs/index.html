@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  Vowel Chart Maker -- companion tool of the LaTeX package vowelchart v 1.1
+  Vowel Chart Maker v1.1.1 -- companion tool of the LaTeX package vowelchart v1.1
   https://ctan.org/pkg/vowelchart  ·  https://github.com/danielbuncic/vowelchart
   Copyright (C) 2026 Daniel Bunčić <daniel.buncic@uni-koeln.de>
   This work may be distributed and/or modified under the conditions of the
@@ -54,7 +54,9 @@ a{color:var(--acc)}
 .mv{display:inline-flex;gap:3px;justify-self:end}.tag{font-size:10px;color:var(--mute);text-transform:uppercase}
 .rows .r.d{background:rgba(204,0,0,.05)}
 #view.click svg{cursor:crosshair}
-#view.move svg{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}#view.move.drag svg{cursor:grabbing}
+#view.move svg{cursor:default;touch-action:none;user-select:none;-webkit-user-select:none}body.dragging,body.dragging *{cursor:none!important}
+#view.zoomed{max-height:calc(min(60vh,calc(100vh - 230px)) + 30px);text-align:left}#view.zoomed svg{display:block;margin:0 auto;max-width:none;max-height:none}
+#mode{width:15.5em}
 #view{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;text-align:center;overflow:auto}
 #view svg{max-width:100%;max-height:min(60vh,calc(100vh - 230px))}
 .bar{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
@@ -122,15 +124,16 @@ textarea{width:100%;height:120px;font:12px/1.4 ui-monospace,monospace}
  <div class="bar" style="margin-top:0;align-items:center">
   <label class="row"><b>Click in the chart to:</b>
    <select id="mode"><option value="ipa" selected>add/remove an IPA vowel</option>
-   <option value="free">add a vowel at the exact position</option><option value="dip">draw a diphthong/arrow (start, end)</option>
+   <option value="free">add a vowel at any position</option><option value="dip">draw a diphthong (start, end)</option>
    <option disabled>──────────</option>
-   <option value="text">add a text (centered at the position)</option><option value="sline">draw a line (start, end)</option><option value="srect">draw a rectangle (two corners)</option><option value="sell">draw an ellipse (center, then a point on it)</option>
-   <option value="line">add/remove a grid line segment (grid = none)</option>
+   <option value="text">add a text</option><option value="sline">draw a line (start, end)</option><option value="srect">draw a rectangle (two corners)</option><option value="sell">draw an ellipse (center, edge)</option>
+   <option value="line">add/remove a grid line segment</option>
    <option disabled>──────────</option>
    <option value="move">move an element by dragging</option>
    <option disabled>──────────</option>
-   <option value="off">preview (shows the exact export area)</option></select></label>
-  <label class="row">Snap to <select id="snap" title="clicked positions snap to multiples of this value (in chart units)"><option value="0">no grid</option><option value="0.05">0.05</option><option value="0.1" selected>0.1</option><option value="0.25">0.25</option><option value="0.5">0.5</option></select></label>
+   <option value="off">preview (exact export area)</option></select></label>
+  <label class="row">Snap to <select id="snap" title="clicked and dragged positions snap to multiples of this value (in chart units) or to a nearby IPA vowel; with “no grid” positions are free and nothing is attracted"><option value="0">no grid</option><option value="0.05">0.05</option><option value="0.1" selected>0.1</option><option value="0.25">0.25</option><option value="0.5">0.5</option></select></label>
+  <label class="row">Zoom <select id="zoom" title="enlarge the preview, e.g. to place things exactly; scroll to see other parts (or hold Ctrl/⌘ and turn the mouse wheel)"><option value="1" selected>100%</option><option value="1.5">150%</option><option value="2">200%</option><option value="3">300%</option><option value="4">400%</option><option value="6">600%</option><option value="8">800%</option></select></label>
  </div>
  <div id="hint" class="note" style="min-height:2.6em"></div>
  <div id="view"></div>
@@ -319,7 +322,12 @@ function effW(){ // chart width in cm: the field, or (empty) the size of the loa
  if(m)return +m[1]*(m[2]=="em"?1:.45)*fpt/28.4528;
  if(tok)return 4.5;
  return 8*fpt/28.4528}
+let zoomPrev=1;
+function applyZoom(){const V=$("view"),S=V.querySelector("svg"),z=+$("zoom").value||1;if(!S)return;
+ S.style.width="";V.classList.remove("zoomed");
+ if(z>1){const w1=S.getBoundingClientRect().width;V.classList.add("zoomed");S.style.width=Math.round(w1*z)+"px";S.style.height="auto"}else S.style.height=""}
 function draw(){
+ const VV=$("view"),sl=VV.scrollLeft,st=VV.scrollTop;
  $("W").placeholder=String(Math.round(effW()*100)/100);
  syncGridItem();
  const K=PXPT, PT=(id,d)=>{const v=parseFloat($(id).value);return Math.round((isNaN(v)?d:v)*K*1000)/1000};
@@ -500,6 +508,7 @@ function draw(){
  R.setAttribute("x",f(vx));R.setAttribute("y",f(vy));R.setAttribute("width",f(vw));R.setAttribute("height",f(vh));
  if(px!=vx||py!=vy||pw!=vw||ph!=vh){R.setAttribute("stroke","#bbb");R.setAttribute("stroke-dasharray","3 3");R.setAttribute("stroke-width","0.7");R.setAttribute("class","prev")}
 
+ applyZoom();VV.scrollLeft=sl;VV.scrollTop=st;
  updateModeOpts();ghost();
  // LaTeX
  let opts=shp=="custom"?["tl={"+tlx+","+tly+"}","tr={"+trx+","+try_+"}","bl={"+blx+","+bly+"}","br={"+brx+","+bry+"}"]:shp=="normal"?[]:[shp]; // "normal" is the default and is not written (unless the loaded code had it)
@@ -994,8 +1003,8 @@ function target(pt){ // what a click at pt would select
   return best&&{kind:"line",seg:best}}
  if(m=="free"||m=="text") return {kind:"free",hv,pos:G.map(...hv)};
  if(DIPLIKE.includes(m)){const s=+$("snap").value,fp=G.map(...hv),dF=Math.hypot(fp[0]-pt[0],fp[1]-pt[1]);
-  // an IPA vowel is chosen if the cursor is nearer to it than to the nearest grid point (without grid: if very close)
-  if(n&&(s?n.d<=dF:n.d<.12*G.u)) return {kind:"ipa",c:n.c,g:n.g,pos:n.pos};
+  // an IPA vowel is chosen if the cursor is nearer to it than to the nearest grid point (without a grid: never, so that a point can be placed right next to an IPA vowel)
+  if(n&&s&&n.d<=dF) return {kind:"ipa",c:n.c,g:n.g,pos:n.pos};
   return {kind:"free",hv,pos:fp}}
  return null}
 function ghost(){
@@ -1022,11 +1031,13 @@ function ghost(){
      h+=`<text x="${f(xx)}" y="${f(yy)}" text-anchor="${s=="l"?"end":s=="r"?"start":"middle"}" font-family="${fam()}" font-size="${G.em}" fill="${on?"#2f5fa8":"#9aa"}" ${on?'font-weight="bold"':""} stroke="#fff" stroke-width="3" paint-order="stroke">${esc(c.sym)}</text>`}}
    $("hint").textContent=HINT[m]+(T.kind=="ipa"?"  →  "+T.c.sym:"  →  h="+T.hv[0]+", v="+T.hv[1]);
   }}
- if(m=="move"){const hs=handles(),hot=drag||(lastPt&&pickHandle(lastPt,14));
+ if(m=="move"){const zk=1/(+$("zoom").value||1),hs=handles(),hot=drag||(lastPt&&pickHandle(lastPt,14));
   $("hint").textContent=drag?drag.msg:hot?HINT.move+"  →  "+descH(hot):HINT.move;
   for(const q of hs){const on=hot&&hot.i==q.i&&hot.k==q.k&&hot.j==q.j,sq=q.k=="rx"||q.k=="ry";
-   h+=sq?`<rect x="${f(q.P[0]-4)}" y="${f(q.P[1]-4)}" width="8" height="8" fill="${on?"#2f5fa8":"#fff"}" fill-opacity="${on?.9:.8}" stroke="#2f5fa8" stroke-width="1.5"/>`
-        :`<circle cx="${f(q.P[0])}" cy="${f(q.P[1])}" r="${on?G.dr+7:G.dr+4}" fill="${on?"#2f5fa8":"#fff"}" fill-opacity="${on?.25:.5}" stroke="#2f5fa8" stroke-width="1.5"/>`}}
+   h+=sq?`<rect x="${f(q.P[0]-4*zk)}" y="${f(q.P[1]-4*zk)}" width="${f(8*zk)}" height="${f(8*zk)}" fill="${on?"#2f5fa8":"#fff"}" fill-opacity="${on?.9:.8}" stroke="#2f5fa8" stroke-width="1.5"/>`
+        :`<circle cx="${f(q.P[0])}" cy="${f(q.P[1])}" r="${on?G.dr+7*zk:G.dr+4*zk}" fill="${on?"#2f5fa8":"#fff"}" fill-opacity="${on?.25:.5}" stroke="#2f5fa8" stroke-width="1.5"/>`}
+  if(drag&&lastPt){const x=lastPt[0],y=lastPt[1],d=`M${f(x-8*zk)} ${f(y)}H${f(x+8*zk)}M${f(x)} ${f(y-8*zk)}V${f(y+8*zk)}`;
+   h+=`<path d="${d}" stroke="#fff" stroke-width="${f(3.5*zk)}" stroke-linecap="round" fill="none"/><path d="${d}" stroke="#2f5fa8" stroke-width="${f(1.3*zk)}" stroke-linecap="round" fill="none"/>`}}
  h+=hlSvg();
  g.innerHTML=h;s.appendChild(g)}
 // highlight of the item whose row has the focus or the mouse (not exported)
@@ -1081,6 +1092,10 @@ $("view").addEventListener("click",e=>{
 
 // ---------- move mode: drag vowels, arrow/line ends, corners, ellipse center and radii
 let drag=null;
+$("zoom").addEventListener("change",()=>{const V=$("view"),z0=zoomPrev,z1=+$("zoom").value;
+ const cx=(V.scrollLeft+V.clientWidth/2)/Math.max(1,V.scrollWidth),cy=(V.scrollTop+V.clientHeight/2)/Math.max(1,V.scrollHeight);
+ applyZoom();zoomPrev=z1;V.scrollLeft=cx*V.scrollWidth-V.clientWidth/2;V.scrollTop=cy*V.scrollHeight-V.clientHeight/2;ghost()});
+$("view").addEventListener("wheel",e=>{if(!(e.ctrlKey||e.metaKey))return;e.preventDefault();const o=[...$("zoom").options],i=o.findIndex(x=>x.selected)+(e.deltaY<0?1:-1);if(i>=0&&i<o.length){$("zoom").selectedIndex=i;$("zoom").dispatchEvent(new Event("change"))}},{passive:false});
 function vposHV(it){if(String(it.h).trim()!==""&&String(it.v).trim()!==""&&!isNaN(+it.h)&&!isNaN(+it.v))return [+it.h,+it.v];const r=lookup((it.sym||"").trim());return r?[r[2],r[3]]:null}
 function handles(){const H=[];
  items.forEach((it,i)=>{
@@ -1097,7 +1112,7 @@ function pickHandle(p,tol){let best=null,bd=tol;for(const h of handles()){const 
 function tolOf(e){const s=$("view").querySelector("svg");if(!s)return 14;const sc=s.getBoundingClientRect().width/s.viewBox.baseVal.width||1;return (e.pointerType=="touch"?28:14)/sc}
 function snapEnd(p){ // IPA vowel near the point, otherwise the snapped grid point
  const hv=snapHV(...inv(p[0],p[1])),n=nearestIPA(p[0],p[1]),s=+$("snap").value,fp=G.map(...hv),dF=Math.hypot(fp[0]-p[0],fp[1]-p[1]);
- if(n&&(s?n.d<=dF:n.d<.12*G.u))return {key:n.c.key,h:n.c.h,v:n.c.v};
+ if(n&&s&&n.d<=dF)return {key:n.c.key,h:n.c.h,v:n.c.v};
  return {key:"",h:hv[0],v:hv[1]}}
 function applyDrag(D,p){const it=items[D.i];if(!it)return;const e=snapEnd(p),str=e.key||e.h+","+e.v;
  D.msg=null;
@@ -1113,9 +1128,9 @@ function applyDrag(D,p){const it=items[D.i];if(!it)return;const e=snapEnd(p),str
  if(D.k!="rx"&&D.k!="ry")D.msg=D.from0+" → "+LHV([e.h,e.v])+(e.key?" ("+e.key+")":"")}
 $("view").addEventListener("pointerdown",e=>{if($("mode").value!="move"||!G||(e.pointerType=="mouse"&&e.button!==0))return;
  const p=svgPt(e);if(!p)return;const h=pickHandle(p,tolOf(e));if(!h)return;
- e.preventDefault();drag=h;drag.from0=descH(h);drag.msg=drag.from0;try{$("view").setPointerCapture(e.pointerId)}catch(_){}$("view").classList.add("drag");lastPt=p;ghost()});
+ e.preventDefault();drag=h;drag.from0=descH(h);drag.msg=drag.from0;try{$("view").setPointerCapture(e.pointerId)}catch(_){}$("view").classList.add("drag");document.body.classList.add("dragging");lastPt=p;ghost()});
 $("view").addEventListener("pointermove",e=>{if(!drag)return;const p=svgPt(e);if(!p)return;e.preventDefault();lastPt=p;applyDrag(drag,p);draw()});
-const endDrag=()=>{if(!drag)return;drag=null;$("view").classList.remove("drag");buildRows();draw()};
+const endDrag=()=>{if(!drag)return;drag=null;$("view").classList.remove("drag");document.body.classList.remove("dragging");buildRows();draw()};
 $("view").addEventListener("pointerup",endDrag);$("view").addEventListener("pointercancel",endDrag);
 items=[];
 buildRows();
