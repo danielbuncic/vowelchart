@@ -19,6 +19,8 @@ Features:
   and TikZ nodes for your own additions
 * compatible with charts written for `vowel` and `pst-vowel`
   (`\putvowel*`, `\vowelhunit`, `\vowelvunit`)
+* Vowel Chart Maker at https://danielbuncic.github.io/vowelchart/ to easily
+  create vowel charts without editing code
 
 ## Example
 
