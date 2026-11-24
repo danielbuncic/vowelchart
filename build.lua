@@ -4,8 +4,8 @@
 --         l3build install  install the package in the local texmf tree
 
 module  = "vowelchart"
-pkgversion = "1.0"
-pkgdate    = "2026-11-21"
+pkgversion = "1.1"
+pkgdate    = "2026-11-24"
 
 -- the package is a hand-written .sty file (no .dtx / .ins)
 sourcefiles  = {"vowelchart.sty"}
