@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<!--
+  Vowel Chart Maker -- companion tool of the LaTeX package vowelchart v 1.1
+  https://ctan.org/pkg/vowelchart  ·  https://github.com/danielbuncic/vowelchart
+  Copyright (C) 2026 Daniel Bunčić <daniel.buncic@uni-koeln.de>
+  This work may be distributed and/or modified under the conditions of the
+  LaTeX Project Public License, version 1.3c or later
+  (https://www.latex-project.org/lppl.txt).
+  Single file, no external resources: it can be saved and used offline.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vowel Chart Maker</title>
+<style>
+:root{--bg:#fafafa;--panel:#fff;--ink:#1d1d1f;--mute:#6b6b70;--line:#d9d9de;--acc:#2f5fa8;--bad:#c33}
+@media (prefers-color-scheme:dark){:root{--bg:#161618;--panel:#202024;--ink:#ececf0;--mute:#9a9aa3;--line:#38383f;--acc:#7da7e8;--bad:#ff7a7a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,sans-serif}
+header{padding:14px 20px;border-bottom:1px solid var(--line);background:var(--panel)}
+header h1{margin:0;font-size:19px}header p{margin:2px 0 0;color:var(--mute);font-size:13px}
+main{display:grid;grid-template-columns:minmax(570px,640px) minmax(0,620px);justify-content:center;gap:16px;padding:16px 20px;align-items:start}
+@media(max-width:860px){main{grid-template-columns:1fr}.stick{position:static!important;order:-1}.rcol{display:contents}}
+@media(max-height:720px){.stick{position:static!important}}
+section{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:12px}
+h2{font-size:14px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute)}
+label{display:inline-flex;flex-direction:column;font-size:12px;color:var(--mute);margin:0 8px 6px 0}
+label.row{flex-direction:row;align-items:center;gap:6px}
+input,select,button,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:4px 6px}
+input[type=number]{width:70px}
+#corners input{width:100%;min-width:0}input[type=color]{padding:0;width:40px;height:28px}
+input[type=checkbox]{width:auto}
+button{cursor:pointer}button:hover{border-color:var(--acc)}
+button.primary{background:var(--acc);color:#fff;border-color:var(--acc)}
+.rows .r{display:grid;grid-template-columns:32px 62px 62px 46px 66px 46px 26px 26px 22px 26px 1fr;gap:4px;align-items:center;margin-bottom:6px;padding-bottom:6px;border-bottom:1px dashed var(--line)}
+.rows .r.hd{border:0;margin:0 0 2px;padding:0;font-size:10px;color:var(--mute);text-transform:uppercase;line-height:1.1}
+.rows input[type=text],.rows select{width:100%;min-width:0;font-size:16px}
+.rows select{font-size:13px;padding:4px 2px}
+.rows input[type=number]{width:100%;min-width:0;font-size:13px;padding:4px 2px}
+.rows input[type=color]{width:100%;min-width:0;height:26px}
+.rows input[type=checkbox]{width:16px;height:16px;justify-self:center}
+.bad{border-color:var(--bad)!important}
+.warn{margin-top:8px;padding:8px 10px;border:1px solid var(--bad);border-radius:6px;background:rgba(214,64,52,.12);color:var(--ink);font-size:13px}
+.warn[hidden]{display:none}
+.x{color:var(--bad)}
+#pal{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px}
+#pal button{font-size:18px;min-width:30px;padding:1px 5px}
+.stick{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0 6px;margin-top:-12px}
+select:disabled,input:disabled,button:disabled{opacity:.4;cursor:not-allowed;background:var(--line)}
+footer{padding:4px 20px 24px;color:var(--mute);font-size:12px;text-align:center}footer .fl{font-size:18px;line-height:1.6}
+a{color:var(--acc)}
+.rows .r button{min-width:26px;height:26px;padding:0;font-size:16px;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+.mv{display:inline-flex;gap:3px;justify-self:end}.tag{font-size:10px;color:var(--mute);text-transform:uppercase}
+.rows .r.d{background:rgba(204,0,0,.05)}
+#view.click svg{cursor:crosshair}
+#view.move svg{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}#view.move.drag svg{cursor:grabbing}
+#view{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;text-align:center;overflow:auto}
+#view svg{max-width:100%;max-height:min(60vh,calc(100vh - 230px))}
+.bar{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+textarea{width:100%;height:120px;font:12px/1.4 ui-monospace,monospace}
+.note{font-size:12px;color:var(--mute)}
+.tex{white-space:nowrap}.tex .a{font-size:.74em;position:relative;top:-.22em;margin:0 -.08em 0 -.33em}.tex .e{position:relative;top:.22em;margin:0 -.1em 0 -.17em}
+#msg{font-size:12px;color:var(--acc);flex-basis:100%}#msg:empty{display:none}
+</style>
+</head>
+<body>
+<header><h1>Vowel Chart Maker</h1>
+<p>Build a vowel chart, then download/copy it as SVG or PNG or as <span class="tex">L<span class="a">A</span>T<span class="e">E</span>X</span> code for the package <a href="https://ctan.org/pkg/vowelchart"><code>vowelchart</code></a>; or convert <span class="tex">L<span class="a">A</span>T<span class="e">E</span>X</span> code from <code>(pst-)vowel</code>. Everything runs in your browser.</p></header>
+<main>
+<div>
+<section><h2>Shape and grid</h2>
+ <label>Shape<select id="shape" title="outline of the chart">
+  <option value="normal">normal (IPA quadrilateral)</option><option value="rectangle">rectangle</option>
+  <option value="triangle">triangle</option><option value="symmetric">symmetric</option>
+  <option value="slanted">slanted (Daniel Jones)</option><option value="custom">custom (four corners)</option></select></label>
+ <label>Grid<select id="grid" title="which lines are drawn inside the chart">
+  <option value="3">ipanew (default)</option><option value="1">simple</option><option value="0">plain (outline only)</option>
+  <option value="4">centralzone</option><option value="2">“standard” (old)</option><option value="5">centralcol</option>
+  <option value="-1">none</option></select></label>
+ <div id="corners" style="display:none;margin:4px 0 8px">
+  <div class="note">Corners as x, y in chart units (the normal shape is 4 wide and 3 high, y runs downwards).</div>
+  <div style="display:grid;grid-template-columns:auto 56px 56px auto 56px 56px;gap:4px 6px;align-items:center;max-width:420px">
+   <span class="note">top left</span><input type="number" step="any" id="c0" title="top left corner, x (chart units)"><input type="number" step="any" id="c1" title="top left corner, y (chart units, runs downwards)">
+   <span class="note">top right</span><input type="number" step="any" id="c2" title="top right corner, x"><input type="number" step="any" id="c3" title="top right corner, y">
+   <span class="note">bottom left</span><input type="number" step="any" id="c4" title="bottom left corner, x"><input type="number" step="any" id="c5" title="bottom left corner, y">
+   <span class="note">bottom right</span><input type="number" step="any" id="c6" title="bottom right corner, x"><input type="number" step="any" id="c7" title="bottom right corner, y">
+  </div></div>
+ <label>Heights<select id="heights" title="number of vowel heights: four (close, close-mid, open-mid, open) or three"><option value="4">four</option><option value="3">three</option></select></label>
+ <div class="note">With grid <b>none</b> you can add single line segments of the <code>ipanew</code> grid by clicking (mode “grid line segment”), to show only a part of the diagram:
+  <button id="allLines" title="add all line segments of the ipanew grid to the list">all <code>ipanew</code> lines</button> <button id="clrLines" title="remove all grid line segments">clear lines</button><br>The lines form one entry “grid” in the list. Move it down to draw the lines over other elements.</div>
+</section>
+<section><h2>Size and colors</h2>
+ <label>Width (cm)<input type="number" id="W" value="4.5" step=".5" min="1" max="30" title="width of the diagram grid; empty = size as in the loaded code (or the LaTeX package default 8em)"></label>
+ <label>Font size (pt)<input type="number" id="fs" value="11" step=".5" min="3" max="60" title="font size of the labels in pt (a single label can have its own size)"></label>
+ <label>Line width (pt)<input type="number" id="lw" value="0.2" step=".05" min=".05" title="line width of the frame, the grid lines and the shapes in pt (a single shape can have its own line width)"></label>
+ <label>Dot radius (pt)<input type="number" id="dr" value="1.4" step=".1" min="0" title="radius of the dots that mark the vowel positions in pt"></label>
+ <label>Arrow width (pt)<input type="number" id="aw" value="0.6" step=".1" min=".05" title="line width of the diphthong arrows"></label>
+ <label>Arrowhead (pt)<input type="number" id="ah" value="6" step=".5" min="1" title="width of the arrowheads in pt"></label><br>
+ <label>Lines &amp; text<input type="color" id="fg" value="#000000" title="color of the frame, grid lines and text"></label>
+ <label>Background<input type="color" id="bg" value="#ffffff" title="background color of the chart"></label>
+ <label>Margin (cm)<input type="number" id="mg" value="0" step=".05" min="0" max="3" title="margin of the background around the chart"></label>
+ <label>Font<input type="text" id="font" value="Libertinus Serif, Charis SIL, Doulos SIL, Gentium Plus, DejaVu Serif, serif" style="width:300px;max-width:100%" title="font for the labels in the preview, SVG and PNG: the first one installed on your computer is used, so several names serve as fallbacks (it must contain the IPA characters). The LaTeX code uses the font of your document."></label>
+ <div id="xol" hidden style="margin-top:6px"><label>Further options (from loaded <span class="tex">L<span class="a">A</span>T<span class="e">E</span>X</span> code)<input type="text" id="xo" value="" spellcheck="false" style="width:360px;max-width:100%;font:12px ui-monospace,monospace" title="options of the loaded code that the tool does not know: they are written unchanged to the code"></label></div>
+</section>
+<section><h2>Vowels, arrows, shapes</h2>
+ <div class="note">Everything is drawn in the order of this list: items further down lie on top of the ones above (use ↑ ↓ to change the order).<br>
+ <b>Monophthongs:</b> type an IPA symbol or its X-SAMPA code (e.g. <b>E</b>, <b>2</b>, <b>@</b>, <b>6'</b>) – the position comes from the IPA chart. To place a vowel yourself, fill in <b>h</b> (0–2, left to right) and <b>v</b> (0–3, top to bottom).<br>
+ <b>Diphthongs (arrows):</b> start and end are an IPA/X-SAMPA symbol or <b>h,v</b> (e.g. <b>1,1.5</b>).<br>
+ <b>Line, rectangle, ellipse:</b> endpoints, corners or center are given like the end of an arrow (<b>h,v</b> or a symbol). A rectangle is a rectangle in <i>vowel space</i> (its sides follow the shape of the chart). Ellipse: the second field holds the radii <b>rx,ry</b> (one number = circle) in chart units. Further fields: line width, line style, fill opacity (0–1), outline color, fill color, “no fill” checkbox.</div>
+ <div class="rows" style="margin-top:8px"><div class="r hd"><span></span><span>symbol/from</span><span>h,v/to</span><span>label</span><span>position</span><span title="font size of the label in px (empty = global size)">size</span><span title="color of the dot/arrow">●/→</span><span title="color of the label">Aa</span><span title="label does not clear the lines behind it (labelbg=off, contour=off)">no bg</span><span></span><span></span></div></div>
+ <div id="rows" class="rows"></div>
+ <div class="bar"><button id="addv" title="add a vowel (IPA symbol or own position) to the list">+ Vowel</button><button id="addd" title="add a diphthong (arrow) to the list">+ Diphthong</button><button id="addl" title="add a line to the list">+ Line</button><button id="addr" title="add a rectangle to the list">+ Rectangle</button><button id="adde" title="add an ellipse to the list">+ Ellipse</button><button id="addt" title="add a text without a dot to the list">+ Text</button></div>
+ <div class="note"><b>Monophthongs:</b> click a symbol to add it:</div><div id="pal"></div>
+ <div class="note" style="margin-top:14px">Start from a ready-made chart (replaces all current entries):</div>
+ <div class="bar" style="margin-top:4px"><button id="pIPA" title="replace the list with all vowels of the IPA chart">Preset: full IPA chart</button><button id="pDE" title="replace the list with the vowels of German">Preset: German</button><button id="pEN" title="replace the list with the vowels of American English">Preset: American English</button><button id="clrv" title="remove all entries of the list">Clear all</button></div>
+ <div id="warn" class="warn" hidden><span id="warntx"></span> <button id="warnyes" class="primary">Yes, replace</button> <button id="warnno" title="keep the present list">Cancel</button></div>
+</section>
+
+</div>
+<div class="rcol"><div class="stick">
+ <div class="bar" style="margin-top:0;align-items:center">
+  <label class="row"><b>Click in the chart to:</b>
+   <select id="mode"><option value="ipa" selected>add/remove an IPA vowel</option>
+   <option value="free">add a vowel at the exact position</option><option value="dip">draw a diphthong/arrow (start, end)</option>
+   <option disabled>──────────</option>
+   <option value="text">add a text (centered at the position)</option><option value="sline">draw a line (start, end)</option><option value="srect">draw a rectangle (two corners)</option><option value="sell">draw an ellipse (center, then a point on it)</option>
+   <option value="line">add/remove a grid line segment (grid = none)</option>
+   <option disabled>──────────</option>
+   <option value="move">move an element by dragging</option>
+   <option disabled>──────────</option>
+   <option value="off">preview (shows the exact export area)</option></select></label>
+  <label class="row">Snap to <select id="snap" title="clicked positions snap to multiples of this value (in chart units)"><option value="0">no grid</option><option value="0.05">0.05</option><option value="0.1" selected>0.1</option><option value="0.25">0.25</option><option value="0.5">0.5</option></select></label>
+ </div>
+ <div id="hint" class="note" style="min-height:2.6em"></div>
+ <div id="view"></div>
+</div>
+<div class="rest">
+ <div class="bar" style="margin-bottom:4px">
+  <button class="primary" id="dsvg" title="download the chart as an SVG file (vector graphic with text)">Download SVG</button>
+  <button class="primary" id="dpng" title="download the chart as a PNG image">Download PNG</button>
+  <button id="cpng" title="copy the chart as an image to the clipboard (to paste into Word, LibreOffice, Google Docs, …)">Copy PNG</button>
+  <button id="csvg" title="copy the SVG code to the clipboard">Copy SVG code</button>
+  <button class="primary" id="ctex" title="copy the LaTeX code to the clipboard">Copy <span class="tex">L<span class="a">A</span>T<span class="e">E</span>X</span> code</button>
+  <button id="save" title="save the chart as a project file (.json) that you can load here again">Save project (.json)</button>
+  <button id="load" title="load a project, an SVG file created here or a file with LaTeX code">Load project, SVG or <span class="tex">L<span class="a">A</span>T<span class="e">E</span>X</span>…</button><button id="paste" title="Load SVG code (created here), a project or LaTeX code from the clipboard. You can also just press Ctrl+V (⌘V on a Mac) anywhere on this page outside of an input field.">Paste SVG or <span class="tex">L<span class="a">A</span>T<span class="e">E</span>X</span> code…</button><input type="file" id="file" accept=".json,.svg,.tex,.txt,image/svg+xml,application/json,text/plain" hidden>
+  <label class="row">PNG scale <select id="pscale" title="resolution of the PNG: multiple of the preview size in pixels"><option>2</option><option selected>3</option><option>4</option><option>6</option></select></label>
+ <span id="msg"></span>
+ </div>
+ <div id="pwarn" class="warn" hidden style="margin:0 0 8px"><span id="pwarntx"></span> <button id="pwarnyes" class="primary">Yes, replace</button> <button id="pwarnno" title="keep the present list">Cancel</button></div>
+ <div id="pastebox" hidden style="margin:0 0 8px"><textarea id="pastearea" spellcheck="false" placeholder="Paste SVG code (created here) or LaTeX code (\\begin{vowelchart} … \\end{vowelchart}) here with Ctrl+V/⌘V; it is loaded at once." style="height:80px"></textarea> <button id="pastego" title="load the pasted code">Load</button> <button id="pastecancel" title="close without loading">Cancel</button></div>
+ <div class="note" style="margin-bottom:14px">Word: Insert → Pictures → this device, with the SVG file (Microsoft 365/Word 2019 and later keeps it as a vector graphic), or paste the PNG. The SVG uses text, so the IPA font has to be installed on the computer that opens it; otherwise use the PNG. A downloaded SVG can be loaded here again to edit it, and so can <span class="tex">L<span class="a">A</span>T<span class="e">E</span>X</span> code.</div>
+ 
+<section><h2>This chart in <span class="tex">L<span class="a">A</span>T<span class="e">E</span>X</span> (package <a href="https://ctan.org/pkg/vowelchart"><code>vowelchart</code></a>)</h2>
+  <textarea id="tex" readonly title="LaTeX code of the chart (to copy; changes are made in the other fields)"></textarea>
+  <div class="note">Loading <span class="tex">L<span class="a">A</span>T<span class="e">E</span>X</span> code (file or pasted from the clipboard): only what stands between <code>\begin{vowelchart}</code> and <code>\end{vowelchart}</code> is read. What the tool does not know is not drawn, but it is kept unchanged: as “<span class="tex">L<span class="a">A</span>T<span class="e">E</span>X</span>” entries in the list (in their position), as further options (a field “Further options” appears) and inside the entries; colors, sizes and line widths are written exactly as they were in the code as long as you do not change them here. Charts of the old packages <code>vowel</code>/<code>pst-vowel</code> (<code>\begin{vowel}</code>, and <code>\putvowel*</code> in a vowelchart) can be loaded as well: the vowels with absolute coordinates are converted into ordinary vowels with relative coordinates, symbols at their IPA position into IPA vowels, and standard PSTricks arrows (<code>\ncline</code>, <code>\ncarc</code>, <code>\nccurve</code> with <code>\naput</code> etc.) into diphthong arrows between the nodes, with <code>nodesep</code> as “shorten” (they are not kept in the old form). Node names are kept as they are.</div>
+ </section>
+</div></div>
+</main>
+<footer>Offline use: save this page (Ctrl+S, “Webpage, HTML only”) and open the file in any browser – it is a single file and needs no internet connection or installation.
+<div class="fl">❧</div>
+Vowel Chart Maker v1.1 by <a href="http://daniel.buncic.de/">Daniel Bunčić</a>, 24 November 2026. Free software under the <a href="https://www.latex-project.org/lppl/lppl-1-3c/"><span class="tex">L<span class="a">A</span>T<span class="e">E</span>X</span> Project Public License</a>, version 1.3c or later.
+ · <a href="https://danielbuncic.github.io/vowelchart/">Home page</a> · <a href="https://github.com/danielbuncic/vowelchart">Project on GitHub</a> · <a href="https://ctan.org/pkg/vowelchart">Package on CTAN</a></footer>
+<script>
+const IPA = {"i": ["i", "l", 0.0, 0.0], "y": ["y", "r", 0.0, 0.0], "ɨ": ["ɨ", "l", 1.0, 0.0], "1": ["ɨ", "l", 1.0, 0.0], "ʉ": ["ʉ", "r", 1.0, 0.0], "}": ["ʉ", "r", 1.0, 0.0], "u-": ["ʉ", "r", 1.0, 0.0], "ɯ": ["ɯ", "l", 2.0, 0.0], "M": ["ɯ", "l", 2.0, 0.0], "u": ["u", "r", 2.0, 0.0], "ɪ": ["ɪ", "l", 0.33, 0.5], "I": ["ɪ", "l", 0.33, 0.5], "ʏ": ["ʏ", "r", 0.33, 0.5], "Y": ["ʏ", "r", 0.33, 0.5], "ʊ": ["ʊ", "r", 1.67, 0.5], "U": ["ʊ", "r", 1.67, 0.5], "e": ["e", "l", 0.0, 1.0], "ø": ["ø", "r", 0.0, 1.0], "2": ["ø", "r", 0.0, 1.0], "ɘ": ["ɘ", "l", 1.0, 1.0], "@-": ["ɘ", "l", 1.0, 1.0], "ɵ": ["ɵ", "r", 1.0, 1.0], "8": ["ɵ", "r", 1.0, 1.0], "ɤ": ["ɤ", "l", 2.0, 1.0], "7": ["ɤ", "l", 2.0, 1.0], "o": ["o", "r", 2.0, 1.0], "e'": ["e", "l", 0.0, 1.5], "ø'": ["ø", "r", 0.0, 1.5], "2'": ["ø", "r", 0.0, 1.5], "o'": ["ɔ", "r", 2.0, 1.5], "ə": ["ə", "x", 1.0, 1.5], "@": ["ə", "x", 1.0, 1.5], "ə'": ["ə", "l", 1.0, 1.5], "@'": ["ə", "l", 1.0, 1.5], "'ə": ["ə", "r", 1.0, 1.5], "'@": ["ə", "r", 1.0, 1.5], "ɛ'": ["ɛ", "l", 0.0, 1.5], "E'": ["ɛ", "l", 0.0, 1.5], "œ'": ["œ", "r", 0.0, 1.5], "oe'": ["œ", "r", 0.0, 1.5], "9'": ["œ", "r", 0.0, 1.5], "ɔ'": ["ɔ", "r", 2.0, 1.5], "O'": ["ɔ", "r", 2.0, 1.5], "ɛ": ["ɛ", "l", 0.0, 2.0], "E": ["ɛ", "l", 0.0, 2.0], "œ": ["œ", "r", 0.0, 2.0], "oe": ["œ", "r", 0.0, 2.0], "9": ["œ", "r", 0.0, 2.0], "ɜ": ["ɜ", "l", 1.0, 2.0], "3": ["ɜ", "l", 1.0, 2.0], "ɞ": ["ɞ", "r", 1.0, 2.0], "3-": ["ɞ", "r", 1.0, 2.0], "ʌ": ["ʌ", "l", 2.0, 2.0], "V": ["ʌ", "l", 2.0, 2.0], "ɔ": ["ɔ", "r", 2.0, 2.0], "O": ["ɔ", "r", 2.0, 2.0], "æ": ["æ", "l", 0.0, 2.5], "{": ["æ", "l", 0.0, 2.5], "ae": ["æ", "l", 0.0, 2.5], "ɐ": ["ɐ", "x", 1.0, 2.5], "6": ["ɐ", "x", 1.0, 2.5], "ɐ'": ["ɐ", "l", 1.0, 2.5], "6'": ["ɐ", "l", 1.0, 2.5], "'ɐ": ["ɐ", "r", 1.0, 2.5], "'6": ["ɐ", "r", 1.0, 2.5], "a": ["a", "l", 0.0, 3.0], "æ'": ["æ", "l", 0.0, 3.0], "ae'": ["æ", "l", 0.0, 3.0], "{'": ["æ", "l", 0.0, 3.0], "a'": ["a", "l", 1.0, 3.0], "'a'": ["a", "x", 1.0, 3.0], "ɶ": ["ɶ", "r", 0.0, 3.0], "&": ["ɶ", "r", 0.0, 3.0], "OE": ["ɶ", "r", 0.0, 3.0], "ɑ": ["ɑ", "l", 2.0, 3.0], "A": ["ɑ", "l", 2.0, 3.0], "ɒ": ["ɒ", "r", 2.0, 3.0], "Q": ["ɒ", "r", 2.0, 3.0]};
+const SHAPES={normal:[0,0,4,0,2,3,4,3],rectangle:[0,0,4,0,0,3,4,3],triangle:[0,0,4,0,2,3,2,3],
+ symmetric:[0,0,4,0,1,3,3,3],slanted:[0,0,3.6,.7,2.4,2.7,4,2.7]};
+const $=id=>document.getElementById(id);
+const PXCM=70, PXPT=PXCM/28.4528; // internally 70 px = 1 cm; px per pt
+let prevShape="normal",items=[],lines=[],TV=null,G=null,pend=null,lastPt=null;
+function mkDiph(a,b,fr){const A=lookup(a),B=lookup(b),r=x=>Math.round(x*100)/100;
+ return {t:"d",from:a,to:r(A[2]+fr*(B[2]-A[2]))+","+r(A[3]+fr*(B[3]-A[3])),label:A[0]+"\u035c"+B[0],pos:"above",color:""}}
+const CARD=[null,[0,0],[0,1],[0,2],[0,3],[2,3],[2,2],[2,1],[2,0],[1,0],[1,1],[1,1.5],[1,2],[.5,.5],[1.5,.5],[1,2.5],[0,2.5]];
+const it_cn=(v,h,vv)=>{const c=CARD[+v.cn];return c&&Math.abs(c[0]-h)<1e-9&&Math.abs(c[1]-vv)<1e-9};
+const XCOL={black:"#000000",white:"#ffffff",red:"#ff0000",green:"#00ff00",blue:"#0000ff",cyan:"#00ffff",magenta:"#ff00ff",yellow:"#ffff00",gray:"#808080",lightgray:"#bfbfbf",darkgray:"#404040",brown:"#bf8040",lime:"#bfff00",olive:"#808000",orange:"#ff8000",pink:"#ffbfbf",purple:"#bf0040",teal:"#008080",violet:"#800080"};
+const TIKZW={"ultra thin":.1,"very thin":.2,thin:.4,semithick:.6,thick:.8,"very thick":1.2,"ultra thick":1.6};
+const pv=t=>String(t).replace(/\\(?:color|hspace\*?|vspace\*?)\{[^{}]*\}\s*/g,"").replace(/\\(?:textbf|textit|textrm|textsf|texttt|textsc|emph|mbox)\{([^{}]*)\}/g,"$1");
+const SH=(t,o)=>{o={...o};if(o.nofill===undefined&&o.fill!==undefined)o.nofill=!o.fill;delete o.fill;return {t,from:"",to:"",lw:"",dash:"solid",op:"",color:"",fcolor:"#cfd8ea",nofill:false,xo:"",...o}};
+const ISSH=t=>t=="l"||t=="r"||t=="e";
+function parseR(s){const m=String(s||"").split(/[,;\s]+/).filter(x=>x!=="").map(Number);if(!m.length||m.length>2||m.some(x=>!(x>0)))return null;return [m[0],m.length>1?m[1]:m[0]]}
+const rgbs=c=>"{rgb,255:red,"+parseInt(c.slice(1,3),16)+";green,"+parseInt(c.slice(3,5),16)+";blue,"+parseInt(c.slice(5,7),16)+"}";
+const DE_D=()=>[{t:"d",from:"0.8,2.9",to:"0.2,1.3",label:"a\u035cɪ",pos:"above",color:""},{t:"d",from:"1.3,2.9",to:"1.9,1.2",label:"a\u035cʊ",pos:"above",color:""},{t:"d",from:"1.9,1.8",to:"0.5,1.3",label:"ɔ\u035cɪ",pos:"above",color:""}];
+// General American after Ladefoged (1995), positions read off the diagram (approximate)
+const EN_D=()=>[["1,2.65","0.25,0.55","a\u035cɪ"],["1,2.65","1.7,0.55","a\u035cʊ"],["1.45,2.55","0.2,1.15","ɔ\u035cɪ"]].map(a=>({t:"d",from:a[0],to:a[1],label:a[2],pos:a[2].endsWith("ʊ")?"below":"above",color:""}));
+const PRESETS={
+ ipa:"i y ɨ ʉ ɯ u ɪ ʏ ʊ e ø ɘ ɵ ɤ o ə ɛ œ ɜ ɞ ʌ ɔ æ ɐ a ɶ ɑ ɒ".split(" ").map(s=>({sym:s,side:"auto",h:"",v:"",lab:""})),
+ en:[["i","r",.1,.15],["e","r",.15,.85],["ɪ","r",.35,1.2],["ɛ","r",.2,2.25],["æ","r",.2,2.75],["u","r",1.5,.25],["ʊ","l",1.35,.7],["o","l",1.95,1.2],["ɚ","r",1.05,1.6],["ʌ","r",1.05,2.3],["ɑ","l",1.65,2.85]].map(a=>({sym:a[0],side:a[1],h:String(a[2]),v:String(a[3]),lab:""})),
+ de:"i y u e ø o ɪ ʏ ʊ ɛ œ ɔ ə ɐ a".split(" ").map(s=>({sym:s,side:"auto",h:"",v:"",lab:""}))
+};
+PRESETS.de=PRESETS.de.map(x=>x.sym=="a"?{...x,sym:"a'",lab:"a"}:x);
+IPA["@\\"]=IPA["@-"];IPA["3\\"]=IPA["3-"]; // X-SAMPA with backslash
+const hexs=c=>"[HTML]{"+c.slice(1).toUpperCase()+"}";
+function tsym(s){return s.indexOf("\\")>=0&&IPA[s]?IPA[s][0]:s} // no backslash in LaTeX input
+function lookup(k){return IPA[k]||null}
+function pos(e){ // endpoint -> {h,v,sym}
+  e=(e||"").trim(); if(!e) return null;
+  const m=e.match(/^\(?\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*\)?$/);
+  if(m) return {h:+m[1],v:+m[2],sym:""};
+  const nn=e.match(/^\(\s*([A-Za-z][\w-]*)\s*\)$/); // (name): a vowel of the list with this node name
+  if(nn){const it=items.find(x=>x.t=="v"&&String(x.nm||"").trim()===nn[1]);const p=it&&itemPos(it);if(p)return {h:p[0],v:p[1],sym:"",node:nn[1],item:it};return null}
+  const nd=e.match(/^\(?\s*v(\d{1,2})\s*(?:,?\s*xshift\s*=\s*(-?[\d.]+)\s*pt)?\s*\)?$/); // cardinal vowel node (putcvowel), e.g. v16 or v4 xshift=-5.5pt
+  if(nd&&CARD[+nd[1]])return {h:CARD[+nd[1]][0],v:CARD[+nd[1]][1],sym:"",node:"v"+nd[1],xs:nd[2]!==undefined?+nd[2]:0,xsr:nd[2]};
+  const r=lookup(e); return r?{h:r[2],v:r[3],sym:r[0]}:null;
+}
+// ---------- forms
+function selHTML(opts,cur){return opts.map(o=>`<option value="${o[0]}"${o[0]==cur?' selected':''}>${o[1]}</option>`).join("")}
+function buildRows(){
+ hlH=-1;
+ const fgNow=$("fg").value;
+ $("rows").innerHTML=items.map((it,i)=>{
+  const d0=i==0?" disabled":"",d1=i==items.length-1?" disabled":"";
+  const ic=p=>`<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  const mv=`<span class="mv"><button data-mv="top" title="move to the beginning (drawn first, below everything)"${d0}>${ic('<path d="M3 2.5h10M8 14V6M4.5 9.5L8 6l3.5 3.5"/>')}</button><button data-mv="-1" title="move up (drawn earlier)"${d0}>${ic('<path d="M8 13V3M4.5 6.5L8 3l3.5 3.5"/>')}</button><button data-mv="1" title="move down (drawn later, on top)"${d1}>${ic('<path d="M8 3v10M4.5 9.5L8 13l3.5-3.5"/>')}</button><button data-mv="bottom" title="move to the end (drawn last, on top of everything)"${d1}>${ic('<path d="M3 13.5h10M8 2v8M4.5 6.5L8 10l3.5-3.5"/>')}</button></span>`;
+  const fsi=`<input type="number" data-k="fs" min="4" max="200" step="1" value="${esc(it.fs||"")}" placeholder="${$("fs").value}" title="font size of this label in pt (empty = global font size)">`;
+  const col=`<input type="color" data-k="color" value="${it.color||fgNow}" title="color of the dot/arrow (default: color of lines &amp; text)"><input type="color" data-k="lcolor" value="${it.lcolor||it.color||fgNow}" title="color of the label (default: same as dot / arrow)">`;
+  const nc=`<input type="checkbox" data-k="noclear"${it.noclear?" checked":""} title="no cleared background: the label does not interrupt the lines behind it (labelbg=off, contour=off)">`;
+  const del=`<button class="x" data-del="1" title="remove">×</button>`;
+  if(it.t=="x") return `<div class="r x" data-i="${i}"><span class="tag"><span class="tex">L<span class="a">A</span>T<span class="e">E</span>X</span></span><input type="text" data-k="tex" value="${esc(it.tex)}" spellcheck="false" style="grid-column:2 / 10;font:12px ui-monospace,monospace" title="a line of LaTeX that the tool does not interpret; it is written unchanged to the code (inside the environment, at this position)">${del}${mv}</div>`;
+  if(it.t=="g") return `<div class="r g" data-i="${i}"><span class="tag">grid</span><span style="grid-column:2 / 10;font-size:13px">grid lines (added with “add/remove a grid line segment”)</span>${del}${mv}</div>`;
+  if(ISSH(it.t)){const isl=it.t=="l",ise=it.t=="e",nm={l:"line",r:"rect",e:"ell."}[it.t];
+   const dopts=isl?[["solid","solid"],["dashed","dashed"],["dotted","dotted"]]:[["solid","solid"],["dashed","dashed"],["dotted","dotted"],["none","no outline"]];
+   const lwv=`<input type="number" data-k="lw" min="0" step=".1" value="${esc(it.lw)}" placeholder="${$("lw").value}" title="line width in pt (empty = global line width, 0 = no outline)">`;
+   const dsh=`<select data-k="dash" title="line style">${selHTML(dopts,it.dash)}</select>`;
+   const opc=isl?"<span></span>":`<input type="number" data-k="op" min="0" max="1" step=".1" value="${esc(it.op)}" placeholder="1" title="fill opacity 0–1 (empty = 1)">`;
+   const fc=isl?"<span></span><span></span>":`<input type="color" data-k="fcolor" value="${it.fcolor}" title="fill color"><input type="checkbox" data-k="nofill"${it.nofill?" checked":""} title="no background: the area is not filled">`;
+   return `<div class="r s" data-i="${i}"><span class="tag">${nm}</span>
+  <input type="text" data-k="from" value="${esc(it.from)}" placeholder="${ise?"center":"from"}" title="${ise?"center":it.t=="r"?"first corner":"start"}: IPA/X-SAMPA symbol or position (horizontal,vertical)">
+  <input type="text" data-k="to" value="${esc(it.to)}" placeholder="${ise?"rx,ry":"to"}" title="${ise?"radii rx,ry in chart units (one number = circle)":it.t=="r"?"opposite corner":"end"}: ${ise?"":"IPA/X-SAMPA symbol or position (horizontal,vertical)"}">
+  ${lwv}${dsh}${opc}<input type="color" data-k="color" value="${it.color||fgNow}" title="outline color (default: color of lines &amp; text)">${fc}${del}${mv}${isl&&String(it.more||"").trim()?`<span></span><input type="text" data-k="more" value="${esc(it.more)}" spellcheck="false" style="grid-column:2 / 10" title="further points of this polyline (the line continues from “to” through these points): horizontal,vertical ; horizontal,vertical ; …"><span style="grid-column:10 / 12;font-size:11px;color:var(--mute)">more points</span>`:""}${String(it.xo||"").trim()?`<span></span><input type="text" data-k="xo" value="${esc(it.xo)}" spellcheck="false" style="grid-column:2 / 10;font:12px ui-monospace,monospace" title="further TikZ options of this shape: written unchanged to the code, not shown in the preview"><span style="grid-column:10 / 12;font-size:11px;color:var(--mute)">extra options</span>`:""}</div>`}
+  if(it.t=="d") return `<div class="r d" data-i="${i}"><span class="tag">diph.</span>
+  <input type="text" data-k="from" value="${esc(it.from)}" placeholder="from" title="start: IPA/X-SAMPA symbol or position (horizontal,vertical)">
+  <input type="text" data-k="to" value="${esc(it.to)}" placeholder="to" title="end: IPA/X-SAMPA symbol or position (horizontal,vertical)">
+  <input type="text" data-k="label" value="${esc(it.label)}" placeholder="label" title="label of the arrow (* = both symbols with a tie bar)">
+  <select data-k="pos" title="position of the label">${selHTML([["above","above"],["below","below"],["on","on arrow"]],it.pos)}</select>
+  ${fsi}${col}${nc}${del}${mv}${(String(it.nm||"").trim()||String(it.sh||"").trim())?`<span></span><input type="text" data-k="nm" value="${esc(it.nm||"")}" placeholder="node name" spellcheck="false" style="grid-column:2 / 4;font:12px ui-monospace,monospace" title="node name of this arrow (TikZ node, as in the loaded code): written unchanged to the code"><input type="text" data-k="sh" value="${esc(it.sh||"")}" placeholder="shorten" spellcheck="false" style="grid-column:4 / 7;font:12px ui-monospace,monospace" title="shorten the arrow at its start and end (e.g. .25ex or .25ex, 1pt; TikZ options shorten &lt;= and shorten &gt;=); written unchanged to the code"><span style="grid-column:7 / 12;font-size:11px;color:var(--mute)">node name · shorten</span>`:""}</div>`;
+  const hv=(String(it.h)!==""||String(it.v)!=="")?it.h+","+it.v:"";
+  return `<div class="r v" data-i="${i}"><span class="tag">vowel</span>
+  <input type="text" data-k="sym" value="${esc(it.sym)}" placeholder="symbol" title="IPA symbol or X-SAMPA">
+  <input type="text" data-k="hv" value="${esc(hv)}" placeholder="h,v" title="own position: horizontal (0–2), vertical (0–3); leave empty to use the position of the IPA chart">
+  <input type="text" data-k="lab" value="${esc(it.lab)}" placeholder="label" title="optional different label">
+  <select data-k="side" title="side of the dot on which the label stands (left/right) or centered without a dot">${selHTML([["auto","auto"],["l","left"],["r","right"],["x","no dot"]],it.side)}</select>
+  ${fsi}${col}${nc}${del}${mv}${String(it.nm||"").trim()?`<span></span><input type="text" data-k="nm" value="${esc(it.nm)}" spellcheck="false" style="grid-column:2 / 10;font:12px ui-monospace,monospace" title="node name of this vowel/arrow (TikZ node, as in the loaded code): written unchanged to the code"><span style="grid-column:10 / 12;font-size:11px;color:var(--mute)">node name</span>`:""}</div>`}).join("");
+ syncRows();
+}
+function syncRow(row){const it=items[+row.dataset.i];if(!it)return;
+ const set=(k,dis)=>{const el=row.querySelector(`[data-k="${k}"]`);if(el)el.disabled=!!dis};
+ if(it.t=="v"){
+  const custom=String(it.h).trim()!==""&&String(it.v).trim()!=="",r=lookup((it.sym||"").trim());
+  const side=it.side!="auto"?it.side:custom?"r":(r?r[1]:"r");
+  set("color",side=="x");set("lcolor",!String(it.lab||"").trim()&&!String(it.sym||"").trim())}
+ else if(it.t=="d")set("lcolor",!String(it.label||"").trim());
+ else if(ISSH(it.t)){const no=it.dash=="none";set("color",no);set("lw",no);set("fcolor",it.nofill);set("op",it.nofill)}}
+function syncRows(){document.querySelectorAll("#rows .r[data-i]").forEach(syncRow)}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;")}
+document.addEventListener("input",e=>{
+ const t=e.target,row=t.closest(".r"); if(!row||!t.dataset.k) return;
+ const it=items[+row.dataset.i];
+ if(t.dataset.k=="hv"){const m=t.value.split(/[,;\s]+/).filter(x=>x!=="");it.h=m[0]===undefined?"":m[0];it.v=m[1]===undefined?"":m[1];delete it.cn}
+ else it[t.dataset.k]=t.type=="checkbox"?t.checked:t.value;
+ syncRow(row);
+ if(t.dataset.k=="color"&&!it.lcolor){const lc=row.querySelector("[data-k=lcolor]");if(lc)lc.value=t.value}
+ draw();
+});
+document.addEventListener("click",e=>{
+ const t=e.target;
+ if(t.closest("button")&&t.closest("button").dataset.del){const row=t.closest(".r"),rm=items.splice(+row.dataset.i,1)[0];if(rm&&rm.t=="g")lines=[];buildRows();draw()}
+ if(t.closest("button")&&t.closest("button").dataset.mv){const bt=t.closest("button"),row=bt.closest(".r"),i=+row.dataset.i,m=bt.dataset.mv;
+  const j=m=="top"?0:m=="bottom"?items.length-1:i+ +m;
+  if(j>=0&&j<items.length&&j!==i){const x=items.splice(i,1)[0];items.splice(j,0,x);buildRows();draw()}}
+});
+$("addv").onclick=()=>{items.push({t:"v",sym:"",side:"auto",h:"",v:"",lab:"",color:""});buildRows();draw()};
+$("addd").onclick=()=>{items.push({t:"d",from:"",to:"",label:"*",pos:"above",color:""});buildRows();draw()};
+$("addl").onclick=()=>{items.push(SH("l",{from:"0.5,0.5",to:"1.5,2.5"}));buildRows();draw()};
+$("addr").onclick=()=>{items.push(SH("r",{from:"0.5,0.5",to:"1.5,2"}));buildRows();draw()};
+$("adde").onclick=()=>{items.push(SH("e",{from:"1,1.5",to:"0.5,0.3"}));buildRows();draw()};
+$("addt").onclick=()=>{items.push({t:"v",sym:"",side:"x",h:"1",v:"1.5",lab:"text",color:""});buildRows();draw()};
+let warnFn=null;
+function askReplace(fn,what){
+ if(!items.length){fn();return}
+ warnFn=fn;$("warntx").textContent=what+" will remove all "+items.length+" current entr"+(items.length==1?"y":"ies")+" from the list. Continue?";
+ $("warn").hidden=false;$("warnyes").focus()}
+$("warnyes").onclick=()=>{$("warn").hidden=true;const f=warnFn;warnFn=null;if(f)f()};
+$("warnno").onclick=()=>{$("warn").hidden=true;warnFn=null};
+$("clrv").onclick=()=>askReplace(()=>{items=[];buildRows();draw()},"“Clear all”");
+$("pIPA").onclick=()=>askReplace(()=>{items=PRESETS.ipa.map(x=>({t:"v",...x}));buildRows();draw()},"This preset");
+$("pDE").onclick=()=>askReplace(()=>{items=DE_D().concat(PRESETS.de.map(x=>({t:"v",...x})));buildRows();draw()},"This preset");
+$("pEN").onclick=()=>askReplace(()=>{items=EN_D().concat(PRESETS.en.map(x=>({t:"v",...x})));buildRows();draw()},"This preset");
+$("fg").addEventListener("input",buildRows);
+document.querySelectorAll("section input,section select").forEach(el=>{
+ if(!el.closest(".rows")) el.addEventListener("input",draw)});
+(function pal(){
+ const seen=new Set(),out=[],ORD="aɐɑɒʌæeəɘɛɜɞiɨɪoɔɵøœɶɤuʉʊɯyʏ";
+ for(const k in IPA){const s=IPA[k][0];if(!seen.has(s)){seen.add(s);out.push(s)}}
+ out.sort((a,b)=>(ORD.indexOf(a)<0?99:ORD.indexOf(a))-(ORD.indexOf(b)<0?99:ORD.indexOf(b)));
+ $("pal").innerHTML=out.map(s=>`<button data-s="${s}">${s}</button>`).join("");
+ $("pal").onclick=e=>{const s=e.target.dataset.s;if(!s)return;
+  items.push({t:"v",sym:s,side:"auto",h:"",v:"",lab:"",color:""});buildRows();draw()};
+})();
+// ---------- drawing
+const NS="http://www.w3.org/2000/svg";
+function fam(){return $("font").value.split(",").map(s=>s.trim().replace(/^['"]|['"]$/g,"")).filter(Boolean)
+ .map(n=>/^(serif|sans-serif|monospace|cursive|fantasy)$/.test(n)?n:"'"+n+"'").join(", ")}
+function gridPaths(lines){ // segments that meet end to start (in any direction) are joined to one path: A--B, B--C -> A--B--C
+ const sg=lines.map(l=>{const q=l.split(",");return [[q[0],q[1]],[q[2],q[3]]]}),used=sg.map(()=>false),same=(a,b)=>+a[0]===+b[0]&&+a[1]===+b[1],out=[];
+ for(let i=0;i<sg.length;i++){if(used[i])continue;used[i]=true;const p=[sg[i][0],sg[i][1]];
+  for(let go=true;go;){go=false;
+   for(let j=0;j<sg.length&&!go;j++){if(used[j])continue;const [a,b]=sg[j],e=p[p.length-1],s0=p[0];
+    if(same(e,a)){p.push(b)}else if(same(e,b)){p.push(a)}else if(same(s0,b)){p.unshift(a)}else if(same(s0,a)){p.unshift(b)}else continue;
+    used[j]=true;go=true}}
+  out.push(p)}
+ return out}
+function syncGridItem(){ // the drawn grid line segments (grid = none) form one entry of the list
+ const none=+$("grid").value<0,want=none&&lines.length>0,i=items.findIndex(x=>x.t=="g");
+ if(want&&i<0){items.unshift({t:"g"});buildRows()}
+ else if(!want&&i>=0){items.splice(i,1);buildRows()}}
+function effW(){ // chart width in cm: the field, or (empty) the size of the loaded code / the package default 8em
+ const v=parseFloat($("W").value);if(v>0)return v;
+ const fpt=parseFloat($("fs").value)||11,tok=OSRC.W&&OSRC.W.tok||"",m=tok.match(/(-?[\d.]+)\s*(em|ex)\b/);
+ if(m)return +m[1]*(m[2]=="em"?1:.45)*fpt/28.4528;
+ if(tok)return 4.5;
+ return 8*fpt/28.4528}
+function draw(){
+ $("W").placeholder=String(Math.round(effW()*100)/100);
+ syncGridItem();
+ const K=PXPT, PT=(id,d)=>{const v=parseFloat($(id).value);return Math.round((isNaN(v)?d:v)*K*1000)/1000};
+ const W=effW()*PXCM, fs=PT("fs",11), lw=PT("lw",.2), dr=PT("dr",1.4);
+ const fg=$("fg").value, bg=$("bg").value, type=+$("grid").value, three=$("heights").value=="3";
+ const shp=$("shape").value;
+ if(shp!==prevShape){ if(shp=="custom"){SHAPES[prevShape].forEach((x,i)=>$("c"+i).value=x)} prevShape=shp }
+ $("corners").style.display=shp=="custom"?"":"none";
+ const C=shp=="custom"?[0,1,2,3,4,5,6,7].map(i=>+$("c"+i).value||0):SHAPES[shp], [tlx,tly,trx,try_,blx,bly,brx,bry]=C;
+ const xs=[tlx,trx,blx,brx], ext=Math.max(...xs)-Math.min(...xs)||1, u=W/ext, x0=Math.min(...xs);
+ const map=(h,v)=>{const Lx=tlx+(blx-tlx)*v/3,Ly=tly+(bly-tly)*v/3,Rx=trx+(brx-trx)*v/3,Ry=try_+(bry-try_)*v/3;
+  return [(Lx+h/2*(Rx-Lx)-x0)*u,(Ly+h/2*(Ry-Ly))*u]};
+ G={map,u,x0,dr,em:fs,fg,bg,W,type,three};
+ const em=fs, pad=.10*em, gap=.18*em, lift=.225*em, boxh=.45*em, stripe=.15*em, ov=.5;
+ let g="";const FF=fam(),TA=`font-family="${FF}" font-size="${fs}"`;
+ const seg=(a,b,c,d)=>{const p=map(a,b),q=map(c,d);return `<path d="M${f(p[0])} ${f(p[1])}L${f(q[0])} ${f(q[1])}"/>`};
+ if(type>=0){
+  const P=[[0,0],[2,0],[2,3],[0,3]].map(a=>map(...a));
+  g+=`<path d="M${P.map(p=>f(p[0])+" "+f(p[1])).join("L")}Z"/>`;
+  if(type>0) g+= three?seg(0,1.5,2,1.5):seg(0,1,2,1)+seg(0,2,2,2);
+  if(type==3) g+=seg(1,0,1,3);
+  if(type==2) g+=seg(.583,0,1,2.5)+seg(1,0,1,2.5)+seg(1.417,0,1,2.5);
+  if(type==4) g+=seg(.583,0,1,2.5)+seg(1.417,0,1,2.5);
+  if(type==5) g+=seg(.667,0,.667,3)+seg(1.333,0,1.333,3);
+ }
+ let svg=`<g id="grid" fill="none" stroke="${fg}" stroke-width="${lw}" stroke-linejoin="miter">${g}</g>`;
+ // vowels
+ const outs=[],texv=[];
+ items.forEach((v,i)=>{
+  if(v.t!="v")return;
+  const sym=v.sym.trim(); const row=document.querySelector(`#rows .r[data-i="${i}"]`);
+  const set=(k,b)=>{const el=row&&row.querySelector(`[data-k="${k}"]`);el&&el.classList.toggle("bad",b)};
+  let h,vv,side,label=v.lab.trim()||sym,custom=String(v.h).trim()!==""&&String(v.v).trim()!=="";
+  if(!sym&&!v.lab&&!custom){set("sym",false);return}
+  if(custom){h=+v.h;vv=+v.v;side=v.side=="auto"?"r":v.side;set("sym",false);set("hv",isNaN(h)||isNaN(vv));
+   if(isNaN(h)||isNaN(vv))return}
+  else{const r=lookup(sym);set("sym",!r);if(!r)return;h=r[2];vv=r[3];side=v.side=="auto"?r[1]:v.side;
+   if(!v.lab.trim()) label=r[0]}
+  const fe=(+v.fs>0)?+v.fs*K:fs, ee=fe/fs, TAv=`font-family="${FF}" font-size="${fe}"`;
+  const [X,Y]=map(h,vv), by=Y+lift*ee, vcol=v.color||fg;
+  let o="";
+  if(!v.noclear&&side=="x"&&Math.abs(h-1)<.001) o+=`<rect x="${f(X-.35*em)}" y="${f(Y-.5*em)}" width="${f(.7*em)}" height="${f(em)}" fill="${bg}" stroke="none"/>`;
+  let tx=X,anc="middle";
+  if(side=="l"){tx=X-dr-gap;anc="end"}
+  if(side=="r"){tx=X+dr+gap;anc="start"}
+  if(side!="x"){
+   const w=gap+ov, xr=side=="l"?tx-ov:X+dr-ov;
+   if(!v.noclear)o+=`<rect class="br" x="${f(side=="l"?tx-ov:X+dr-ov)}" y="${f(Y-stripe/2)}" width="${f(gap+ov+ (side=="l"?0:0))}" height="${f(stripe)}" fill="${bg}" stroke="none"/>`;
+   o+=`<circle cx="${f(X)}" cy="${f(Y)}" r="${dr}" fill="${vcol}" stroke="none"/>`;
+  }
+  if(label!=="") o+=(v.noclear?"":`<text class="vl" ${TAv} data-ee="${f(ee)}" data-by="${f(by)}" x="${f(tx)}" y="${f(by)}" text-anchor="${anc}" fill="${bg}" stroke="${bg}" stroke-width="${f(.12*fe)}" stroke-linejoin="round">${esc(pv(label))}</text>`)
+   +`<text ${TAv} x="${f(tx)}" y="${f(by)}" text-anchor="${anc}" fill="${v.lcolor||vcol}">${esc(pv(label))}</text>`;
+  outs[i]=`<g class="vowel">${o}</g>`;
+  const L=side=="auto"?"":side;
+  const mainc=v.color||fg, lc=v.lcolor||mainc, ldiff=lc.toLowerCase()!=mainc.toLowerCase();
+  const LS=v.src&&v.src.lcolor&&v.src.lcolor.v==lc?v.src.lcolor:null;
+  const tc0=x=>ldiff?(LS?LS.pre+x+LS.post:`\\textcolor${hexs(lc)}{${x}}`):x;
+  const tc=x=>ee!=1?`\\scalebox{${f(ee)}}{${tc0(x)}}`:tc0(x);
+  const labtxt=v.lab.trim()||(custom?label:(lookup(sym)||[sym])[0]);
+  const oo=[];if(custom){oo.push(side)}else if(v.side!="auto")oo.push(v.side);
+  if(v.noclear)oo.push("labelbg=off,contour=off");
+  const os=oo.join(",");
+  const CP=it_cn(v,h,vv);
+  const cos=[side!="x"?side:"",v.noclear?"labelbg=off,contour=off":""].filter(Boolean).join(",");
+  const NM=String(v.nm||"").trim()?"["+String(v.nm).trim()+"]":"";
+  const vtex0=CP?`  \\putcvowel${cos?"["+cos+"]":""}{${label===""?"":tc(label)}}{${v.cn}}`:custom?(label===""?`  \\putvowel${v.noclear?"["+"labelbg=off,contour=off]":""}{}{${h}}{${vv}}`:`  \\putvowel[${os}]{${tc(label)}}{${h}}{${vv}}`):
+   // \putipavowel: a single optional argument is the label, so with options the label is always given
+   `  \\putipavowel${os?"["+os+"]":""}${(os||ldiff||v.lab.trim())?"["+(ldiff?tc(labtxt):(v.lab.trim()||labtxt))+"]":""}{${tsym(sym)}}`;
+  const vtex=vtex0+NM;
+  const CSV=v.src&&v.src.color&&v.src.color.v==mainc?v.src.color.tok:null;
+  texv[i]=(CSV||mainc.toLowerCase()!=fg.toLowerCase())?`  {\\color${CSV||hexs(mainc)}${vtex.trim()}}`:vtex;
+ });
+ // diphthongs
+ items.forEach((d,i)=>{
+  if(d.t!="d")return;
+  const row=document.querySelector(`#rows .r[data-i="${i}"]`);
+  const a=pos(d.from),b=pos(d.to);
+  const bad=(k,x)=>{const el=row&&row.querySelector(`[data-k="${k}"]`);el&&el.classList.toggle("bad",!x&&(d[k]||"").trim()!="")};
+  bad("from",a);bad("to",b); if(!a||!b)return;
+  const nodeBox=it=>{ // approximate box of the label of a vowel (a TikZ node): centre and half size in px
+   const p=itemPos(it),r=lookup((it.sym||"").trim()),lab=pv(String(it.lab||"").trim()||(r?r[0]:it.sym||"")),fe=(+it.fs>0)?+it.fs*K:fs;
+   const side=it.side!="auto"?it.side:(String(it.h).trim()!==""&&String(it.v).trim()!==""?"r":(r?r[1]:"r")),X=map(p[0],p[1]),w=Array.from(lab).length*.5*fe+2*.1*fe,hh=.31*fe;
+   if(side=="x")return {cx:X[0],cy:X[1],hw:w/2,hh};
+   const L2=dr+gap+w;return {cx:X[0]+(side=="l"?-L2/2:L2/2),cy:X[1],hw:L2/2,hh}};
+  let P=map(a.h,a.v),Q=map(b.h,b.v),ba=null,bb=null;
+  if(a.node){ba=nodeBox(a.item);P=[ba.cx,ba.cy]}
+  if(b.node){bb=nodeBox(b.item);Q=[bb.cx,bb.cy]}
+  let dx=Q[0]-P[0],dy=Q[1]-P[1],L=Math.hypot(dx,dy); if(L<1)return;
+  const ux=dx/L,uy=dy/L, sh=3*(em/26*1.33);let s0=a.sym?sh:1,s1=b.sym?sh:1;
+  const shLen=t=>{let sum=0;String(t).split("+").forEach(z=>{z=z.trim();let m=z.match(/^(-?[\d.]*)\s*(pt|ex|em|mm|cm|\\vowelchartdot)$/);if(!m)return;const n=m[1]===""?1:+m[1];sum+=n*({pt:K,ex:.45*fs,em:fs,mm:PXCM/10,cm:PXCM,"\\vowelchartdot":dr}[m[2]])});return sum};
+  if(String(d.sh||"").trim()){const q=String(d.sh).split(",");s0=shLen(q[0]);s1=shLen(q[1]!==undefined&&q[1].trim()!==""?q[1]:q[0])}
+  const clip=(bx,vx,vy)=>Math.min(bx.hw/Math.max(1e-9,Math.abs(vx)),bx.hh/Math.max(1e-9,Math.abs(vy)));
+  if(ba)s0+=clip(ba,ux,uy); if(bb)s1+=clip(bb,ux,uy);
+  const hw=PT("ah",6), hl=1.2*hw;
+  const sx=P[0]+ux*s0, sy=P[1]+uy*s0, ex=Q[0]-ux*s1, ey=Q[1]-uy*s1;
+  const bx=ex-ux*hl, by=ey-uy*hl, nx=-uy, ny=ux;
+  const col=d.color||fg, w=PT("aw",.6);
+  const sd=.3*hl, Bx=bx, By=by, c1=t=>[Bx+ux*hl*t[0]+nx*hw/2*t[1],By+uy*hl*t[0]+ny*hw/2*t[1]];
+  const k1=c1([.33,.56]),k2=c1([.67,.22]),k3=c1([.67,-.22]),k4=c1([.33,-.56]),B1=c1([0,1]),B2=c1([0,-1]);
+  const arrow=`<path d="M${f(sx)} ${f(sy)}L${f(bx+ux*sd)} ${f(by+uy*sd)}" stroke="${col}" stroke-width="${w}" fill="none"/>`
+   +`<path d="M${f(ex)} ${f(ey)}C${f(k2[0])} ${f(k2[1])} ${f(k1[0])} ${f(k1[1])} ${f(B1[0])} ${f(B1[1])}L${f(B2[0])} ${f(B2[1])}C${f(k4[0])} ${f(k4[1])} ${f(k3[0])} ${f(k3[1])} ${f(ex)} ${f(ey)}Z" fill="${col}" stroke="none"/>`;
+  const fe=(+d.fs>0)?+d.fs*K:fs, ee=fe/fs, TAd=`font-family="${FF}" font-size="${fe}"`;
+  let lab=(d.label||"").trim();
+  if(lab=="*") lab=(a.sym||"")+"\u035c"+(b.sym||"");
+  let haloG="",textG="";
+  if(lab){
+   let ang=Math.atan2(dy,dx)*180/Math.PI; if(ang>90)ang-=180; if(ang<=-90)ang+=180;
+   const mx=(sx+ex)/2,my=(sy+ey)/2, tie=lab.indexOf("\u035c")>=0;
+   const yy=d.pos=="below"?.7*fe:d.pos=="on"?.225*fe:-(.1*fe+(tie?.2*fe:0)+lw);
+   const T=`translate(${f(mx)} ${f(my)}) rotate(${f(ang)})`;
+   haloG=`<g transform="${T}"><text ${TAd} x="0" y="${f(yy)}" text-anchor="middle" fill="${bg}" stroke="${bg}" stroke-width="${f(.3*fe)}" stroke-linejoin="round">${esc(lab)}</text></g>`;
+   textG=`<g transform="${T}"><text ${TAd} x="0" y="${f(yy)}" text-anchor="middle" fill="${d.lcolor||col}">${esc(lab)}</text></g>`;
+  }
+  if(d.noclear)haloG="";
+  // "on": the label cuts the arrow; above/below: the label's halo stays below the arrow
+  outs[i]=`<g class="diphthong">${d.pos=="on"?arrow+haloG+textG:haloG+arrow+textG}</g>`;
+ });
+ // lines, rectangles, ellipses
+ const texs=[];
+ items.forEach((d,i)=>{ // grid line segments (grid = none)
+  if(d.t!="g"||type>=0)return;
+  let gp="";lines.forEach(l=>{const q=l.split(",").map(Number);gp+=seg(...q)});
+  outs[i]=`<g class="gridlines" fill="none" stroke="${fg}" stroke-width="${lw}" stroke-linejoin="miter">${gp}</g>`;
+  texs[i]=gridPaths(lines).map(p=>"  \\draw "+p.map(q=>`(vowel cs: h=${q[0]}, v=${q[1]})`).join(" -- ")+";").join("\n")});
+ items.forEach((d,i)=>{
+  if(!ISSH(d.t))return;
+  const row=document.querySelector(`#rows .r[data-i="${i}"]`);
+  const bad=(k,x)=>{const el=row&&row.querySelector(`[data-k="${k}"]`);el&&el.classList.toggle("bad",!x&&(d[k]||"").trim()!="")};
+  const a=pos(d.from),isE=d.t=="e",b=isE?null:pos(d.to),rr=isE?parseR(d.to):null;
+  bad("from",a);bad("to",isE?rr:b); if(!a||(isE?!rr:!b))return;
+  const col=d.color||fg, sw=d.dash=="none"?0:String(d.lw).trim()===""?lw:+d.lw*K, fillOn=d.t!="l"&&!d.nofill, fc=d.fcolor||"#cfd8ea", op=String(d.op).trim()===""?1:Math.max(0,Math.min(1,+d.op));
+  let at=`fill="${fillOn?fc:"none"}"`+(fillOn&&op<1?` fill-opacity="${op}"`:"");
+  at+=sw>0?` stroke="${col}" stroke-width="${sw}"`+(d.dash=="dashed"?` stroke-dasharray="${f(5*Math.max(1,sw))} ${f(4*Math.max(1,sw))}"`:d.dash=="dotted"?` stroke-dasharray="${f(.3*sw)} ${f(2.2*sw)}" stroke-linecap="round"`:""):` stroke="none"`;
+  const mp=z=>{const q=map(z.h,z.v);return z.xs?[q[0]+z.xs*K,q[1]]:q};
+  const P=mp(a),pt=q=>f(q[0])+" "+f(q[1]);let el;
+  const mo=d.t=="l"?String(d.more||"").split(";").map(x=>x.trim()).filter(Boolean).map(pos):[];bad("more",mo.every(Boolean));if(!mo.every(Boolean))return;
+  if(d.t=="l")el=`<path d="M${pt(P)}L${pt(mp(b))}${mo.map(z=>"L"+pt(mp(z))).join("")}" ${at}/>`;
+  else if(d.t=="r")el=`<path d="M${pt(P)}L${pt(map(b.h,a.v))}L${pt(map(b.h,b.v))}L${pt(map(a.h,b.v))}Z" ${at} stroke-linejoin="miter"/>`;
+  else el=`<ellipse cx="${f(P[0])}" cy="${f(P[1])}" rx="${f(rr[0]*u)}" ry="${f(rr[1]*u)}" ${at}/>`;
+  outs[i]=`<g class="shape">${el}</g>`;
+  const o=[];
+  const SS=d.src||{},sk=(k,v)=>SS[k]&&SS[k].v==v?SS[k].tok:null;
+  if(sw>0){if(sk("color",col))o.push(sk("color",col));else if(col.toLowerCase()!=fg.toLowerCase())o.push("draw="+rgbs(col));
+   if(sk("lw",String(d.lw)))o.push(sk("lw",String(d.lw)));else if(Math.abs(sw-lw)>1e-6)o.push("line width="+f(sw/K)+"pt")}else o.push("draw=none");
+  if(fillOn){o.push(sk("fcolor",fc)||"fill="+rgbs(fc));if(op<1)o.push("fill opacity="+op)}
+  if(sw>0&&d.dash!="solid")o.push(d.dash);
+  if(String(d.xo||"").trim())o.push(String(d.xo).trim());
+  const cs=(h,v,z)=>z&&z.node?`(${z.xs?"[xshift="+(z.xsr!==undefined?z.xsr:z.xs)+"pt]":""}${z.node})`:`(vowel cs:h=${h},v=${v})`, ob=o.length?"["+o.join(", ")+"]":"";
+  texs[i]=d.t=="l"?`  \\draw${ob} ${cs(a.h,a.v,a)} -- ${cs(b.h,b.v,b)}${mo.map(z=>" -- "+cs(z.h,z.v,z)).join("")};`
+   :d.t=="r"?`  \\draw${ob} ${cs(a.h,a.v)} -- ${cs(b.h,a.v)} -- ${cs(b.h,b.v)} -- ${cs(a.h,b.v)} -- cycle;`
+   :rr[0]==rr[1]?`  \\draw${ob} ${cs(a.h,a.v,a)} circle (${rr[0]});`:`  \\draw${ob} ${cs(a.h,a.v,a)} ellipse (${rr[0]} and ${rr[1]});`;
+ });
+ const S=document.createElementNS(NS,"svg");
+ S.setAttribute("xmlns",NS);
+ S.innerHTML=`<rect id="bgr" fill="${bg}"/>`+svg+`<g id="elements">${outs.filter(Boolean).join("")}</g>`;
+ // fix: arrows are drawn after labels of dots, as in the package
+ $("view").innerHTML=""; $("view").appendChild(S);
+ // background boxes behind the dot labels (need measured text)
+ S.querySelectorAll("text.vl").forEach(t=>{
+  const b=t.getBBox(),r=document.createElementNS(NS,"rect"), by=+t.dataset.by;
+  const pe=pad*(+t.dataset.ee||1);r.setAttribute("x",f(b.x-pe));r.setAttribute("width",f(b.width+2*pe));
+  const ee=+t.dataset.ee||1;r.setAttribute("y",f(by-boxh*ee));r.setAttribute("height",f(boxh*ee));r.setAttribute("fill",bg);
+  t.parentNode.insertBefore(r,t);
+ });
+ const bb=S.getBBox(), mx=Math.max(0,parseFloat($("mg").value)||0)*PXCM+lw/2, my=mx; // margin on all four sides (plus half a line width, so that the outline is not cut off)
+ const vx=bb.x-mx, vy=bb.y-my, vw=bb.width+2*mx, vh=bb.height+2*my;
+ TV={vx,vy,vw,vh};
+ let px=vx,py=vy,pw=vw,ph=vh;
+ if($("mode").value!="off"){ // the whole chart frame is needed for clicking
+  const F=[[0,0],[2,0],[2,3],[0,3]].map(a=>map(...a));
+  const ax=F.map(p=>p[0]),ay=F.map(p=>p[1]);
+  const X1=Math.min(vx,Math.min(...ax)-1.4*em),Y1=Math.min(vy,Math.min(...ay)-.9*em),X2=Math.max(vx+vw,Math.max(...ax)+1.4*em),Y2=Math.max(vy+vh,Math.max(...ay)+.9*em);
+  px=X1;py=Y1;pw=X2-X1;ph=Y2-Y1;
+ }
+ S.setAttribute("viewBox",`${f(px)} ${f(py)} ${f(pw)} ${f(ph)}`);
+ S.setAttribute("width",f(pw));S.setAttribute("height",f(ph));
+ const R=S.querySelector("#bgr");R.removeAttribute("id");
+ R.setAttribute("x",f(vx));R.setAttribute("y",f(vy));R.setAttribute("width",f(vw));R.setAttribute("height",f(vh));
+ if(px!=vx||py!=vy||pw!=vw||ph!=vh){R.setAttribute("stroke","#bbb");R.setAttribute("stroke-dasharray","3 3");R.setAttribute("stroke-width","0.7");R.setAttribute("class","prev")}
+
+ updateModeOpts();ghost();
+ // LaTeX
+ let opts=shp=="custom"?["tl={"+tlx+","+tly+"}","tr={"+trx+","+try_+"}","bl={"+blx+","+bly+"}","br={"+brx+","+bry+"}"]:shp=="normal"?[]:[shp]; // "normal" is the default and is not written (unless the loaded code had it)
+ const gn={3:"ipanew",1:"simple",0:"plain",4:"centralzone",2:"standard",5:"centralcol","-1":"none"}[type];
+ {const O=OSRC.shape;if(O&&O.v===shp&&(shp!="custom"||O.cv===[0,1,2,3,4,5,6,7].map(i=>$("c"+i).value).join(",")))opts=O.tok.slice()} // shape tokens as in the loaded code (also none at all)
+ if(OSRC.grid&&OSRC.grid.v===String(type)&&OSRC.grid.tok)opts.push(OSRC.grid.tok);else if(gn!="ipanew")opts.push(gn); if(three)opts.push("three");
+ {const wv=$("W").value.trim();if(OSRC.W&&wv===OSRC.W.v)opts.push(OSRC.W.tok);else if(wv!=="")opts.push("width="+(Math.round(parseFloat(wv)*100)/100)+"cm")}
+ const nv=(id,d)=>{const v=parseFloat($(id).value);return isNaN(v)?d:v}, r2=x=>Math.round(x*100)/100;
+ const os_=(k,id)=>OSRC[k]&&String($(id).value)===OSRC[k].v?OSRC[k].tok:null;
+ if(os_("lw","lw"))opts.push(os_("lw","lw"));else if(Math.abs(nv("lw",.2)-.2)>.004)opts.push("linewidth="+r2(nv("lw",.2))+"pt");
+ if(os_("dr","dr"))opts.push(os_("dr","dr"));else if(Math.abs(nv("dr",1.4)-1.4)>.04)opts.push("dotsize="+r2(nv("dr",1.4))+"pt");
+ if(os_("fs","fs"))opts.push(os_("fs","fs"));else if(Math.abs(nv("fs",11)-11)>.04)opts.push("fontsize="+r2(nv("fs",11))+"pt");
+ let newAw=false;
+ const mgv=Math.max(0,parseFloat($("mg").value)||0);
+ if(os_("mg","mg"))opts.push(os_("mg","mg"));else if(mgv>0){opts.push("bgmargin="+(Math.round(mgv*1000)/1000)+"cm");newAw=true}
+ if(items.some(x=>x.t=="d")){
+  if(os_("aw","aw"))opts.push(os_("aw","aw"));else if(Math.abs(nv("aw",.6)-.6)>.004){opts.push("arrowwidth="+r2(nv("aw",.6))+"pt");newAw=true}
+  if(os_("ah","ah"))opts.push(os_("ah","ah"));else if(Math.abs(nv("ah",6)-6)>.04){opts.push("arrowhead="+r2(nv("ah",6))+"pt");newAw=true}}
+ const diphTex=d=>{if(!pos(d.from)||!pos(d.to))return null;
+  const A=pos(d.from),B=pos(d.to),ia=!!A.sym&&lookup(d.from.trim()),ib=!!B.sym&&lookup(d.to.trim());
+  const lb0=(d.label||"").trim(), o=[];
+  const ee=((+d.fs>0)?+d.fs:(+$("fs").value||11))/(+$("fs").value||11);
+  const mainc=d.color||fg, lcc=d.lcolor||mainc, ldiff=lcc.toLowerCase()!=mainc.toLowerCase();
+  const tiel=(A.sym||"")+"\\vowelchartdiphtie "+(B.sym||"");
+  const DLS=d.src&&d.src.lcolor&&d.src.lcolor.v==lcc?d.src.lcolor:null;
+  let lb=ldiff&&lb0?(DLS?DLS.pre+(lb0=="*"?tiel:lb0)+DLS.post:`\\textcolor${hexs(lcc)}{${lb0=="*"?tiel:lb0}}`):lb0;
+  if(lb&&ee!=1)lb=`\\scalebox{${f(ee)}}{${lb}}`;
+  const DCS=d.src&&d.src.color&&d.src.color.v==mainc?d.src.color.tok:null;
+  if(DCS)o.push(DCS);else if(mainc.toLowerCase()!=fg.toLowerCase())o.push("color={rgb,255:red,"+parseInt(d.color.slice(1,3),16)+";green,"+parseInt(d.color.slice(3,5),16)+";blue,"+parseInt(d.color.slice(5,7),16)+"}");
+  if(d.pos!="above")o.push("diphlabelpos="+d.pos);
+  if(d.noclear)o.push("labelbg=off","contour=off");
+  const ob=o.length?"["+o.join(",")+"]":"";
+  const DN=String(d.nm||"").trim()?"["+String(d.nm).trim()+"]":"";
+  {const shp_=String(d.sh||"").trim();if(shp_){const q=shp_.split(",").map(x=>x.trim());o.push("shorten <="+q[0],"shorten >="+(q[1]!==undefined&&q[1]!==""?q[1]:q[0]))}}
+  const obs=o.length?"["+o.join(",")+"]":"";
+  if(A.node||B.node){const ep=(x,z)=>z.node?"("+z.node+")":(z.sym&&lookup(x.trim()))?tsym(x.trim()):`(vowel cs:h=${z.h},v=${z.v})`;
+   return `  \\putipadiphthong${obs}{${lb=="*"?"":lb}}{${ep(d.from,A)}}{${ep(d.to,B)}}${DN}`}
+  if(ia&&ib&&A.sym&&B.sym) return `  \\putipadiphthong${obs}{${lb}}{${tsym(d.from.trim())}}{${tsym(d.to.trim())}}${DN}`;
+  return `  \\putdiphthong${obs}{${lb=="*"?(A.sym||"")+"\u035c"+(B.sym||""):lb}}{${A.h}}{${A.v}}{${B.h}}{${B.v}}${DN}`;
+ };
+ const TEXMAP=[];items.forEach((it,i)=>{const t=it.t=="v"?texv[i]:it.t=="d"?diphTex(it):it.t=="x"?(String(it.tex||"").trim()?String(it.tex):null):texs[i];
+  if(t)t.split("\n").forEach(line=>TEXMAP.push({i,line}))});
+ const body=TEXMAP.map(m=>m.line);
+ const xo=$("xo").value.trim(); if(xo)opts.push(xo);
+ $("tex").value=[`\\begin{vowelchart}${opts.length?"["+opts.join(", ")+"]":""}`+((type<0||newAw)?" % needs vowelchart 1.1 or later":"")+(items.some(it=>+it.fs>0&&+it.fs!=(+$("fs").value||11))?" % \\scalebox needs graphicx":"")].concat(body,["\\end{vowelchart}"]).join("\n");
+}
+function f(x){return Math.round(x*100)/100}
+// ---------- export
+function esa(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;")}
+function est(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function pp(n,ind){const pad="  ".repeat(ind),tag=n.tagName,at=Array.from(n.attributes).map(a=>` ${a.name}="${esa(a.value)}"`).join(""),kids=Array.from(n.childNodes);
+ if(!kids.length)return `${pad}<${tag}${at}/>`;
+ if(kids.every(k=>k.nodeType==3))return `${pad}<${tag}${at}>${est(n.textContent)}</${tag}>`;
+ return `${pad}<${tag}${at}>\n`+kids.filter(k=>k.nodeType==1).map(k=>pp(k,ind+1)).join("\n")+`\n${pad}</${tag}>`}
+function svgText(){const s=$("view").querySelector("svg").cloneNode(true);const gh=s.querySelector("#ghost");if(gh)gh.remove();
+ s.setAttribute("viewBox",`${f(TV.vx)} ${f(TV.vy)} ${f(TV.vw)} ${f(TV.vh)}`);s.setAttribute("width",f(TV.vw));s.setAttribute("height",f(TV.vh));
+ const pr=s.querySelector("rect.prev");if(pr){pr.removeAttribute("stroke");pr.removeAttribute("stroke-dasharray");pr.removeAttribute("stroke-width");pr.removeAttribute("class")}
+ s.querySelectorAll("[data-by]").forEach(e=>{e.removeAttribute("data-by");e.removeAttribute("class")});
+ const md=document.createElementNS(NS,"metadata");md.id="vowelchart-maker";md.textContent="\n"+JSON.stringify(getState(),null,1)+"\n";s.appendChild(md);
+ return '<?xml version="1.0" encoding="UTF-8"?>\n'+pp(s,0)+"\n"}
+// ---------- save / load
+let OSRC={};
+function getState(){return {app:"vowelchart-maker",version:1,osrc:OSRC,shape:$("shape").value,corners:[0,1,2,3,4,5,6,7].map(i=>$("c"+i).value),grid:$("grid").value,heights:$("heights").value,
+ W:$("W").value,fs:$("fs").value,lw:$("lw").value,dr:$("dr").value,aw:$("aw").value,ah:$("ah").value,mg:$("mg").value,units:"cm",fg:$("fg").value,bg:$("bg").value,
+ font:$("font").value,xo:$("xo").value,snap:$("snap").value,items,lines}}
+function setState(s){
+ if(!s||s.app!="vowelchart-maker")throw new Error("not a Vowel Chart Maker file");
+ if(Array.isArray(s.corners))s.corners.forEach((x,i)=>$("c"+i).value=x);
+ prevShape=s.shape||prevShape;
+ for(const k of ["shape","grid","heights","W","fs","lw","dr","aw","ah","mg","fg","bg","font","xo","snap"]) if(s[k]!==undefined)$(k).value=s[k];
+ if(s.xo===undefined)$("xo").value="";
+ OSRC=s.osrc&&typeof s.osrc=="object"?s.osrc:{};
+ if(s.mg===undefined)$("mg").value="0";
+ if(!$("snap").value)$("snap").value="0.1"; // value no longer offered (e.g. 1)
+ if(s.units!=="cm"){ // older files: width in px (and, before "pt", also the other sizes)
+  if(s.W!==undefined)$("W").value=String(Math.round(+s.W/PXCM*100)/100);
+ }
+ if(s.units!=="pt"&&s.units!=="cm"){
+  const cv=v=>(v===""||v===undefined||isNaN(+v))?v:String(Math.round(+v/PXPT*100)/100);
+  for(const k of ["fs","lw","dr"]) if(s[k]!==undefined)$(k).value=cv(s[k]);
+  $("aw").value="0.6";$("ah").value="6";
+  if(Array.isArray(s.items))s.items=s.items.map(x=>{x={...x};if(x.fs!==undefined)x.fs=cv(x.fs);if(x.lw!==undefined)x.lw=cv(x.lw);return x})}
+ const V=v=>({t:"v",sym:"",side:"auto",h:"",v:"",lab:"",color:"",lcolor:"",fs:"",noclear:false,...v}),D=d=>({t:"d",from:"",to:"",label:"*",pos:"above",color:"",lcolor:"",fs:"",noclear:false,...d});
+ items=Array.isArray(s.items)?s.items.map(x=>x.t=="g"?{t:"g"}:x.t=="x"?{t:"x",tex:String(x.tex||"")}:x.t=="d"?D(x):ISSH(x.t)?SH(x.t,x):V(x)):(s.vowels||[]).map(V).concat((s.diphs||[]).map(D));
+ lines=Array.isArray(s.lines)?s.lines.slice():[];
+ pend=null;buildRows();draw();showXo()}
+function showXo(){$("xol").hidden=!$("xo").value.trim()}
+// ---------- LaTeX import (only \begin{vowelchart} ... \end{vowelchart}; unknown parts are kept as they are)
+function splitOpts(t){const r=[];let d=0,c="";for(const ch of t){if(ch=="{"||ch=="[")d++;if(ch=="}"||ch=="]")d--;if(ch==","&&d==0){r.push(c.trim());c=""}else c+=ch}if(c.trim())r.push(c.trim());return r}
+function grp(s,i){ // group starting at s[i] ({..} or [..]) -> [content,next] or null
+ const o=s[i],c=o=="{"?"}":"]";let d=0;
+ for(let k=i;k<s.length;k++){const x=s[k];if(x=="\\"){k++;continue}if(x==o)d++;else if(x==c){d--;if(d==0)return [s.slice(i+1,k),k+1]}}
+ return null}
+function stmtEnd(s,j){ // end (exclusive) of the statement that starts at s[j]
+ const n=s.length,eol=k=>{const e=s.indexOf("\n",k);return e<0?n:e};
+ if(s[j]=="%")return eol(j);
+ if(s[j]=="{"){const g=grp(s,j);return g?g[1]:eol(j)}
+ const m=s.slice(j).match(/^\\([A-Za-z]+)(\*?)/);
+ if(m&&m[1]=="putvowel"&&(m[2]||LEG)){ // \putvowel* (absolute coordinates) or \putvowel of the old package
+  let k=j+m[0].length;const nxt=()=>{while(k<n&&/\s/.test(s[k]))k++;return s[k]};
+  if(nxt()=="["){const g=grp(s,k);if(!g)return eol(j);k=g[1]}
+  for(let q=0;q<3;q++){if(nxt()!="{")return eol(j);const g=grp(s,k);if(!g)return eol(j);k=g[1]}
+  let q=k;while(q<n&&(s[q]==" "||s[q]=="\t"))q++;
+  if(s[q]==(m[2]?"[":"{")){const g=grp(s,q);if(g)k=g[1]}
+  return k}
+ if(m&&!m[2]&&PUTS[m[1]]){const P=PUTS[m[1]];let k=j+m[0].length,no=0,nm=0;
+  const nxt=()=>{while(k<n&&/\s/.test(s[k]))k++;return s[k]};
+  while(nxt()=="["&&no<P[0]){const g=grp(s,k);if(!g)return eol(j);k=g[1];no++}
+  while(nm<P[1]){if(nxt()!="{")return eol(j);const g=grp(s,k);if(!g)return eol(j);k=g[1];nm++}
+  {let q=k;while(q<n&&(s[q]==" "||s[q]=="\t"))q++;if(s[q]=="["){const g=grp(s,q);if(g)k=g[1]}}
+  return k}
+ if(m&&!m[2]&&/^(ncline|ncarc|nccurve)$/.test(m[1])){ // PSTricks arrow of pst-vowel, with its label command
+  let k=j+m[0].length;const nxt=()=>{while(k<n&&/\s/.test(s[k]))k++;return s[k]};
+  if(nxt()=="["){const g=grp(s,k);if(!g)return eol(j);k=g[1]}
+  for(let q=0;q<3;q++){if(nxt()!="{")return eol(j);const g=grp(s,k);if(!g)return eol(j);k=g[1]}
+  const m2=s.slice(k).match(/^\s*\\(?:naput|nbput|ncput)/);
+  if(m2){let q=k+m2[0].length;const nx=()=>{while(q<n&&/\s/.test(s[q]))q++;return s[q]};
+   if(nx()=="["){const g=grp(s,q);if(g)q=g[1]}
+   if(nx()=="{"){const g=grp(s,q);if(g)k=g[1]}}
+  return k}
+ if(m&&!m[2]&&m[1]=="psset"){let k=j+m[0].length;while(k<n&&/\s/.test(s[k]))k++;if(s[k]=="{"){const g=grp(s,k);if(g)return g[1]}return eol(j)}
+ const semi=m&&/^(draw|fill|path|node|filldraw|clip|shade|shadedraw|coordinate|foreach)$/.test(m[1]);
+ let d=0;
+ for(let k=j;k<n;k++){const x=s[k];
+  if(x=="\\"){k++;continue}
+  if(x=="%"){k=eol(k)-1;continue}
+  if(x=="{"||x=="[")d++;else if(x=="}"||x=="]")d--;
+  if(d<=0){
+   if(semi&&x==";")return k+1;
+   if(!semi&&x=="\n")return k;
+   if(semi&&m[1]=="foreach"&&x=="}"){let q=k+1;while(q<n&&/\s/.test(s[q]))q++;if(s[q]!="{"&&s[q]!="\\"&&s[q]!="[")return k+1}}}
+ return n}
+let LEG=false,LASTNODE="";
+const PUTS={putcvowel:[1,2],putipavowel:[2,1],putvowel:[1,3],putdiphthong:[1,5],putipadiphthong:[1,3]};
+function parseCmd(t){ // \name[..][..]{..}... -> {name,opts,args} (nothing may follow)
+ const m=t.match(/^\\([A-Za-z]+)(\*?)/);if(!m||m[2]||!PUTS[m[1]])return null;
+ const P=PUTS[m[1]],o=[],a=[];let k=m[0].length;
+ const nxt=()=>{while(k<t.length&&/\s/.test(t[k]))k++;return t[k]};
+ while(nxt()=="["&&o.length<P[0]){const g=grp(t,k);if(!g)return null;o.push(g[0]);k=g[1]}
+ while(a.length<P[1]){if(nxt()!="{")return null;const g=grp(t,k);if(!g)return null;a.push(g[0]);k=g[1]}
+ {let q=k;while(q<t.length&&(t[q]==" "||t[q]=="\t"))q++;if(t[q]=="["){const g=grp(t,q);if(g){LASTNODE=g[0].trim();k=g[1]}}} // trailing [node name]
+ if(t.slice(k).trim())return null;
+ return {name:m[1],opts:o,args:a}}
+const hex6=c=>"#"+c.toLowerCase();
+function rgbOpt(v){const m=String(v).trim().match(/^\{rgb,255:red,(\d+);green,(\d+);blue,(\d+)\}$/);if(!m||m.slice(1).some(x=>+x>255))return null;return "#"+m.slice(1).map(x=>(+x).toString(16).padStart(2,"0")).join("")}
+function unwrapLabel(t,gfs){let fs="",lc="",pre="",post="";t=t.trim();
+ let m=t.match(/^\\scalebox\{([\d.]+)\}\{([\s\S]*)\}$/);if(m){fs=String(Math.round(+m[1]*gfs*100)/100);t=m[2].trim()}
+ if(m=t.match(/^\\color\{(\w+)\}\s*([\s\S]*)$/)){if(XCOL[m[1]]){lc=XCOL[m[1]];pre=t.slice(0,t.length-m[2].length);t=m[2].trim()}}
+ else if(m=t.match(/^\\textcolor(\[HTML\]\{([0-9A-Fa-f]{6})\}|\{(\w+)\})\{([\s\S]*)\}$/)){const hx=m[2]?hex6(m[2]):XCOL[m[3]];if(hx){lc=hx;pre="\\textcolor"+m[1]+"{";post="}";t=m[4]}}
+ return {t,fs,lc,pre,post}}
+function setLS(it,u){if(u.lc){it.src={...(it.src||{}),lcolor:{v:u.lc,pre:u.pre,post:u.post}}}}
+const CRE=String.raw`\((?:\s*vowel cs:\s*h=\s*-?[\d.]+\s*,\s*v=\s*-?[\d.]+\s*|\s*(?:\[\s*xshift\s*=\s*-?[\d.]+pt\s*\]\s*)?v\d{1,2}\s*)\)`;
+function coordStr(c){let m=c.match(/vowel cs:\s*h=\s*(-?[\d.]+)\s*,\s*v=\s*(-?[\d.]+)/);if(m)return m[1]+","+m[2];
+ m=c.match(/^\(\s*(?:\[\s*xshift\s*=\s*(-?[\d.]+)pt\s*\]\s*)?v(\d{1,2})\s*\)$/);if(m&&CARD[+m[2]])return "v"+m[2]+(m[1]!==undefined?" xshift="+m[1]+"pt":"");return null}
+const CSP=String.raw`\(\s*vowel cs:\s*h=\s*(-?[\d.]+)\s*,\s*v=\s*(-?[\d.]+)\s*\)`;
+function lenTo(v,unit){const m=String(v).trim().match(/^(-?[\d.]+)\s*(pt|cm|mm|in|bp)$/);if(!m)return null;
+ const pt={pt:1,cm:28.4528,mm:2.84528,in:72.27,bp:72.27/72}[m[2]]*+m[1];
+ return Math.round(pt/(unit=="cm"?28.4528:1)*1000)/1000}
+function relFromAbs(X,Y,c){ // absolute point (in units of the chart, y downwards) -> relative coordinates (h,v) in the shape with the corners c
+ const P=(h,v)=>{const s=h/2,t=v/3;return [(1-s)*(1-t)*c[0]+s*(1-t)*c[2]+(1-s)*t*c[4]+s*t*c[6],(1-s)*(1-t)*c[1]+s*(1-t)*c[3]+(1-s)*t*c[5]+s*t*c[7]]};
+ let h=1,v=Math.max(0,Math.min(3,Y));
+ for(let it=0;it<60;it++){
+  const p=P(h,v),fx=p[0]-X,fy=p[1]-Y;if(Math.abs(fx)+Math.abs(fy)<1e-10)break;
+  const e=1e-6,a=P(h+e,v),b=P(h,v+e),J=[[(a[0]-p[0])/e,(b[0]-p[0])/e],[(a[1]-p[1])/e,(b[1]-p[1])/e]],d=J[0][0]*J[1][1]-J[0][1]*J[1][0];
+  if(Math.abs(d)<1e-9){h=1;v=Y;break} // apex of a triangle: every h is the same point
+  h-=( J[1][1]*fx-J[0][1]*fy)/d;v-=(-J[1][0]*fx+J[0][0]*fy)/d}
+ return [h,v]}
+function snapRel(h,v){ // legacy coordinates are rounded by hand: snap to the edges / lines of the chart, otherwise two decimals
+ const sn=(x,c,tol)=>{for(const q of c)if(Math.abs(x-q)<tol)return q;return Math.round(x*100)/100};
+ return [sn(h,[0,1,2],.02),sn(v,[0,.5,1,1.5,2,2.5,3],.02)]}
+function legacyNum(x,hv){x=String(x).trim();let m=x.match(/^(-?[\d.]*)\s*\\vowel([hv])unit$/);
+ if(m){return m[1]===""?1:m[1]==="-"?-1:(isNaN(+m[1])?null:+m[1])}
+ m=x.match(/^(-?[\d.]+)\s*em$/);if(m)return +m[1]/2; // the old default unit is 2em
+ return null}
+function legacyPut(t,ctx){ // \putvowel of the old package or \putvowel* -> a normal vowel with relative coordinates (undefined: not such a command)
+ const m=t.match(/^\\putvowel(\*?)/);if(!m||!(m[1]||ctx.leg))return undefined;
+ let k=m[0].length,opt="";const nxt=()=>{while(k<t.length&&/\s/.test(t[k]))k++;return t[k]};
+ if(nxt()=="["){const g=grp(t,k);if(!g)return null;opt=g[0];k=g[1]}
+ const a=[];for(let i=0;i<3;i++){if(nxt()!="{")return null;const g=grp(t,k);if(!g)return null;a.push(g[0]);k=g[1]}
+ let rest=t.slice(k).trim(),named=false;
+ if(rest){const g=grp(rest,0);if(g&&rest[0]==(m[1]?"[":"{")&&!rest.slice(g[1]).trim()){named=!!g[0].trim()}else return null}
+ const toks=opt?splitOpts(opt):[];let side=null;
+ for(const x of toks)if(/^[lrx]$/.test(x)&&!side)side=x;else return null;
+ const X=legacyNum(a[1]),b=legacyNum(a[2]);if(X===null||b===null)return null;
+ const [h0,v0]=relFromAbs(X,ctx.three?1.5*b:b,ctx.corners),[h,v]=snapRel(h0,v0);
+ const u=unwrapLabel(a[0],ctx.fs);
+ const it={t:"v",sym:"",side:side||"x",h:String(h),v:String(v),lab:"",color:"",lcolor:u.lc,fs:u.fs,noclear:false};setLS(it,u);
+ if(u.t===""){}else if(/[\\{}]/.test(u.t))it.lab=u.t;else{it.sym=u.t;
+  // a symbol at the place of this vowel in the IPA chart becomes an IPA vowel (position from the table)
+  // (a label such as iː or ɛ/ɛː stays the label; the symbol is looked up without length marks, for each part of a/b)
+  const cand=[];for(const p of u.t.split("/").map(x=>x.trim()))for(const c of [p,p.replace(/[ːˑ]+$/,"")])if(c&&!cand.includes(c))cand.push(c);
+  // several table entries can lie at the same place (a'  /  'a'): take the one whose standard side is the wanted one
+  let best=null;for(const c of cand)for(const key of [c,c+"'","'"+c,"'"+c+"'"]){const r=lookup(key);if(r&&Math.abs(r[2]-h0)<.03&&Math.abs(r[3]-v0)<.03&&(!best||(r[1]==(side||"x")&&best.r[1]!=(side||"x"))))best={key,r}}
+  if(best){const {key,r}=best;it.sym=key;it.lab=u.t!==r[0]?u.t:"";it.h="";it.v="";it.side=(side||"x")==r[1]?"auto":(side||"x");ctx.ipa++}}
+ ctx.conv++;if(named)LASTNODE=rest.slice(1,rest.lastIndexOf(m[1]?"]":"}")).trim();
+ return {item:it}}
+function nodePos(nm,ctx){if(ctx.nodes[nm])return ctx.nodes[nm];const m=nm.match(/^v(\d+)$/);return m&&CARD[+m[1]]?CARD[+m[1]]:null}
+function itemPos(it){if(String(it.h).trim()!==""&&String(it.v).trim()!==""&&!isNaN(+it.h)&&!isNaN(+it.v))return [+it.h,+it.v];const r=lookup((it.sym||"").trim());return r?[r[2],r[3]]:null}
+function pstNodesep(optText,ctx){ // nodesep, nodesepA, nodesepB from a list of PSTricks options
+ let n=null,A=null,B=null;
+ for(const x of splitOpts(optText||"")){const m=x.match(/^(nodesep|nodesepA|nodesepB)\s*=\s*(.*)$/s);if(!m)continue;const v=m[2].trim();if(m[1]=="nodesep")n=v;else if(m[1]=="nodesepA")A=v;else B=v}
+ return {n,A,B}}
+function pstArrow(t,kind,ctx){ // \ncline{->}{A}{B}[\naput{label}] of pst-vowel (PSTricks) -> diphthong arrow; {drop} if not possible
+ let k=kind.length+1,opt="";const nxt=()=>{while(k<t.length&&/\s/.test(t[k]))k++;return t[k]};
+ if(nxt()=="["){const g=grp(t,k);if(!g)return {drop:true};opt=g[0];k=g[1]}
+ const a=[];for(let i=0;i<3;i++){if(nxt()!="{")return {drop:true};const g=grp(t,k);if(!g)return {drop:true};a.push(g[0].trim());k=g[1]}
+ const rest=t.slice(k).trim();let lab="",pos="above";
+ if(rest){const m=rest.match(/^\\(naput|nbput|ncput)\*?\s*/);if(!m)return {drop:true};let q=m[0].length;
+  if(rest[q]=="["){const g=grp(rest,q);if(!g)return {drop:true};q=g[1];while(q<rest.length&&/\s/.test(rest[q]))q++}
+  if(rest[q]!="{")return {drop:true};const g=grp(rest,q);if(!g||rest.slice(g[1]).trim())return {drop:true};
+  lab=g[0].trim();pos={naput:"above",nbput:"below",ncput:"on"}[m[1]]}
+ const dir=a[0]=="->"?1:a[0]=="<-"?-1:0;if(!dir)return {drop:true};
+ // end points: a named vowel of the list -> its node "(name)"; a cardinal node v1..v16 -> its position (the dot)
+ const end=nm=>{if(ctx.nodes[nm])return {ref:"("+nm+")",box:true};const m=nm.match(/^v(\d+)$/);if(m&&CARD[+m[1]])return {ref:CARD[+m[1]][0]+","+CARD[+m[1]][1],box:false};return null};
+ const P=end(a[1]),Q=end(a[2]);if(!P||!Q)return {drop:true};
+ const [F,T]=dir==1?[P,Q]:[Q,P];
+ const ns=pstNodesep(opt,ctx),g=ctx.nodesep||{};
+ const sepA=ns.A||ns.n||g.A||g.n||"",sepB=ns.B||ns.n||g.B||g.n||""; // PSTricks: A at the start node, B at the end node
+ const [sS,sE]=dir==1?[sepA,sepB]:[sepB,sepA];
+ const fix=(v,e)=>{v=String(v||"").trim();if(v===""||/^0(pt|ex|em)?$/.test(v))v="0pt";return (e.box||v=="0pt")?v:v+"+\\vowelchartdot"};
+ const s1=fix(sS,F),s2=fix(sE,T);
+ ctx.pst++;if(kind!="ncline")ctx.curved++;
+ if(splitOpts(opt).some(x=>!/^nodesep[AB]?\s*=/.test(x)))ctx.pstopts++;
+ const it={t:"d",from:F.ref,to:T.ref,label:lab,pos,color:"",lcolor:"",fs:"",noclear:false};
+ if(s1!="0pt"||s2!="0pt")it.sh=s1+","+s2;
+ return {item:it}}
+function interpretStmt(t,ctx){
+ LASTNODE="";const r=interpretStmt0(t,ctx);
+ if(r&&r.item&&LASTNODE&&!r.item.nm)r.item.nm=LASTNODE;
+ return r}
+function interpretStmt0(t,ctx){
+ t=t.trim();
+ {const pm=t.match(/^\\(ncline|ncarc|nccurve)\b/);if(pm)return pstArrow(t,pm[1],ctx);
+  if(/^\\psset\b/.test(t)){const g=grp(t,t.indexOf("{"));if(g){const ns=pstNodesep(g[0],ctx);if(ns.n!==null||ns.A!==null||ns.B!==null)ctx.nodesep={...(ctx.nodesep||{}),...(ns.n!==null?{n:ns.n}:{}),...(ns.A!==null?{A:ns.A}:{}),...(ns.B!==null?{B:ns.B}:{})}}return {drop:true,silent:true}}}
+ if(/^\\putvowel/.test(t)){const lg=legacyPut(t,ctx);if(lg!==undefined)return lg}
+ let m=t.match(/^\{\s*\\color(\[HTML\]\{([0-9A-Fa-f]{6})\}|\{(\w+)\})\s*([\s\S]*)\}$/);
+ if(m){const hx=m[2]?hex6(m[2]):XCOL[m[3]];if(!hx)return null;const r=interpretStmt(m[4],ctx);if(r&&r.item&&r.item.t=="v"){r.item.color=hx;r.item.src={...(r.item.src||{}),color:{v:hx,tok:m[1]}};return r}return null}
+ const noclear=o=>{const a=o.filter(x=>x=="labelbg=off"||x=="contour=off");return a.length==2?true:a.length==0?false:null};
+ if(/^\\put/.test(t)){const c=parseCmd(t);if(!c)return null;
+  const V=(x)=>({t:"v",sym:"",side:"auto",h:"",v:"",lab:"",color:"",lcolor:"",fs:"",noclear:false,...x});
+  if(c.name=="putcvowel"){
+   const toks=c.opts.length?splitOpts(c.opts[0]):[];let side=null,nc=noclear(toks);
+   for(const x of toks)if(/^[lrx]$/.test(x)){if(side)return null;side=x}else if(x!="labelbg=off"&&x!="contour=off")return null;
+   if(nc===null)return null;
+   const n=c.args[1].trim();if(!/^\d+$/.test(n)||!CARD[+n])return null;
+   const u=unwrapLabel(c.args[0],ctx.fs),it=V({side:side||"x",h:String(CARD[+n][0]),v:String(CARD[+n][1]),cn:+n,noclear:nc,fs:u.fs,lcolor:u.lc});setLS(it,u);
+   if(u.t===""){}else if(/[\\{}]/.test(u.t))it.lab=u.t;else it.sym=u.t;
+   return {item:it}}
+  if(c.name=="putipavowel"||c.name=="putvowel"){
+   const opt=c.name=="putipavowel"&&c.opts.length==2?c.opts[0]:c.name=="putvowel"&&c.opts.length?c.opts[0]:"";
+   const toks=opt?splitOpts(opt):[];let side=null,nc=noclear(toks);
+   for(const x of toks)if(/^[lrx]$/.test(x)){if(side)return null;side=x}else if(x!="labelbg=off"&&x!="contour=off")return null;
+   if(nc===null)return null;
+   if(c.name=="putipavowel"){
+    const sym=c.args[0].trim(),r=lookup(sym);if(!r)return null;
+    const lab=c.opts.length==2?c.opts[1]:c.opts.length==1?c.opts[0]:null; // a single optional argument is the label
+    let it=V({sym,side:side||"auto",noclear:nc});
+    if(lab!==null){const u=unwrapLabel(lab,ctx.fs);if(u.t==="")return null; /* dot without label: not available in the list */ if(u.t!==r[0])it.lab=u.t;it.fs=u.fs;it.lcolor=u.lc;setLS(it,u)}
+    return {item:it}}
+   const u=unwrapLabel(c.args[0],ctx.fs),h=c.args[1].trim(),v=c.args[2].trim();
+   if(isNaN(+h)||isNaN(+v)||h===""||v==="")return null;
+   const it=V({side:side||"x",h,v,noclear:nc,fs:u.fs,lcolor:u.lc});setLS(it,u);
+   if(u.t===""){}else if(/[\\{}]/.test(u.t))it.lab=u.t;else it.sym=u.t;
+   return {item:it}}
+  // diphthongs
+  const D=x=>({t:"d",from:"",to:"",label:"*",pos:"above",color:"",lcolor:"",fs:"",noclear:false,...x});
+  const toks=c.opts.length?splitOpts(c.opts[0]):[];let color="",colorTok="",pos="above",off=[];
+  for(const x of toks){let q;
+   if(q=x.match(/^color=(.*)$/s)){color=rgbOpt(q[1])||XCOL[q[1].trim()];if(!color)return null;colorTok=x}
+   else if(q=x.match(/^diphlabelpos=(above|below|on)$/))pos=q[1];
+   else if(x=="labelbg=off"||x=="contour=off")off.push(x);
+   else return null}
+  if(off.length==1)return null;
+  const u=unwrapLabel(c.args[0],ctx.fs);
+  let it;
+  if(c.name=="putdiphthong"){const n=c.args.slice(1).map(x=>x.trim());if(n.some(x=>x===""||isNaN(+x)))return null;
+   it=D({from:n[0]+","+n[1],to:n[2]+","+n[3]})}
+  else{const a=c.args[1].trim(),b=c.args[2].trim();if(!lookup(a)||!lookup(b))return null;it=D({from:a,to:b})}
+  Object.assign(it,{label:u.t,pos,color:color||"",lcolor:u.lc,fs:u.fs,noclear:off.length==2});setLS(it,u);if(color)it.src={...(it.src||{}),color:{v:color,tok:colorTok}};
+  return {item:it}}
+ // \draw
+ m=t.match(/^\\draw\s*/);if(!m||t[t.length-1]!=";")return null;
+ let k=m[0].length,ops=[];
+ if(t[k]=="["){const g=grp(t,k);if(!g)return null;ops=splitOpts(g[0]);k=g[1]}
+ const body=t.slice(k,-1).trim(),P=CSP;
+ let shape=null,from,to,q;const cr=(x)=>new RegExp(x.replace(/C/g,"("+CRE+")"));
+ let more="",poly=false;
+ if(/--/.test(body)&&!/cycle\s*$/.test(body)){ // path of several points: A -- B -- C (without options and with grid none: several grid segments)
+  const pts=body.split(/\s*--\s*/);
+  if(pts.length>2&&pts.every(x=>new RegExp("^"+CRE+"$").test(x.trim()))){const c=pts.map(x=>coordStr(x.trim()));
+   if(c.every(x=>x&&!/^v/.test(x))){
+    if(!ops.length&&ctx.grid<0)return {segs:c.slice(1).map((x,i)=>c[i]+","+x)};
+    poly=true;shape="l";from=c[0];to=c[1];more=c.slice(2).join(" ; ")}}}
+ if(q=body.match(cr("^C\\s*--\\s*C$"))){shape="l";from=coordStr(q[1]);to=coordStr(q[2])}
+ else if(q=body.match(cr("^C\\s*--\\s*C\\s*--\\s*C\\s*--\\s*C\\s*--\\s*cycle$"))){
+  const c=[1,2,3,4].map(i=>coordStr(q[i]));if(c.some(x=>!x||/^v/.test(x)))return null;
+  const p=c.map(x=>x.split(","));if(p[1][1]!==p[0][1]||p[1][0]!==p[2][0]||p[3][0]!==p[0][0]||p[3][1]!==p[2][1])return null;
+  shape="r";from=c[0];to=c[2]}
+ else if(q=body.match(cr("^C\\s*ellipse\\s*\\(\\s*([\\d.]+)\\s+and\\s+([\\d.]+)\\s*\\)$"))){shape="e";from=coordStr(q[1]);to=q[2]==q[3]?q[2]:q[2]+","+q[3]}
+ else if(q=body.match(cr("^C\\s*circle\\s*\\(\\s*([\\d.]+)\\s*\\)$"))){shape="e";from=coordStr(q[1]);to=q[2]}
+ else if(!poly)return null;
+ if(!from||(to===null)||(shape=="l"&&!to))return null;
+ if(shape=="l"&&!ops.length&&ctx.grid<0)return {seg:from+","+to};
+ const it=SH(shape,{from,to,nofill:true,...(more?{more}:{})}),xo=[],src={};
+ for(const x of ops){let y;
+  if(x=="draw=none")it.dash="none";
+  else if(y=x.match(/^draw=(.*)$/s)){const c=rgbOpt(y[1])||XCOL[y[1].trim()];if(!c)xo.push(x);else{it.color=c;src.color={v:c,tok:x}}}
+  else if(y=x.match(/^fill=(.*)$/s)){const c=shape=="l"?null:rgbOpt(y[1])||XCOL[y[1].trim()];if(!c)xo.push(x);else{it.fcolor=c;it.nofill=false;src.fcolor={v:c,tok:x}}}
+  else if(y=x.match(/^fill opacity=([\d.]+)$/)){if(shape=="l")xo.push(x);else it.op=y[1]}
+  else if(y=x.match(/^line width=(.*)$/s)){const l=lenTo(y[1],"pt");if(l===null)xo.push(x);else{it.lw=String(l);src.lw={v:it.lw,tok:x}}}
+  else if(TIKZW[x]!==undefined){it.lw=String(TIKZW[x]);src.lw={v:it.lw,tok:x}}
+  else if(x=="dashed"||x=="dotted"){if(it.dash!="none")it.dash=x}
+  else if(XCOL[x]){it.color=XCOL[x];src.color={v:it.color,tok:x}}
+  else xo.push(x)}
+ it.xo=xo.join(", ");it.src=src;
+ if(shape=="l")it.nofill=false;
+ return {item:it}}
+function texImport(tx){
+ const bm=tx.match(/\\begin\{(vowelchart|vowel)\}/);
+ if(!bm)throw new Error("no \\begin{vowelchart} found");
+ const b0=bm.index,envName=bm[1],legacy=envName=="vowel";LEG=legacy;
+ const nEnv=(tx.match(/\\begin\{(?:vowelchart|vowel)\}/g)||[]).length;
+ let k=b0+bm[0].length,optStr="";
+ {let q=k;while(q<tx.length&&/[ \t]/.test(tx[q]))q++;if(tx[q]=="["){const g=grp(tx,q);if(g){optStr=g[0];k=g[1]}}}
+ const e0=tx.indexOf("\\end{"+envName+"}",k);
+ if(e0<0)throw new Error("no \\end{"+envName+"} found");
+ let body=tx.slice(k,e0);body=body.replace(/^[^\n]*\n/,m=>/^\s*(%.*)?\n$/.test(m)?"":m); // rest of the \begin line (comment)
+ if(legacy){ // pst-vowel: the arrows usually follow after \end{vowel}
+  const t=tx.slice(e0+"\\end{vowel}".length);let p=0,out="";
+  for(;;){while(p<t.length&&/\s/.test(t[p]))p++;if(t[p]=="%"){const e=t.indexOf("\n",p);p=e<0?t.length:e;continue}
+   if(!/^\\(psset|ncline|ncarc|nccurve)\b/.test(t.slice(p)))break;
+   const e=stmtEnd(t,p);out+=t.slice(p,e)+"\n";p=e}
+  body+="\n"+out}
+ // ----- options
+ const S={shape:"normal",grid:"3",heights:"4",lw:"0.2",dr:"1.4",fs:"11",aw:"0.6",ah:"6",mg:"0",W:""};const xo=[],corner={},osrc={};
+ const GN={ipanew:"3",simple:"1",plain:"0",centralzone:"4",standard:"2",centralcol:"5",none:"-1"};
+ const shapeToks=[],ign=[];
+ for(const x of splitOpts(optStr)){let q;
+  if(SHAPES[x]||x=="custom"){S.shape=x;shapeToks.push(x)}
+  else if(GN[x]!==undefined){S.grid=GN[x];osrc.grid={tok:x,v:S.grid}}
+  else if(x=="three")S.heights="3";
+  else if((q=x.match(/^(tl|tr|bl|br)\s*=\s*\{?\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*\}?$/))){corner[q[1]]=[q[2],q[3]];S.shape="custom";shapeToks.push(x)}
+  else if((q=x.match(/^(?:width\s*=\s*|height\s*=\s*)?(-?[\d.]+\s*(?:pt|cm|mm|in|bp|em|ex))$/))){ // size: kept as written; the field shows cm only if the unit is absolute and it is the width
+   if(osrc.W)xo.push(osrc.W.tok);osrc.W={tok:x,v:""};const cm=/^height/.test(x)?null:lenTo(q[1],"cm");if(cm!==null)S.W=String(cm)}
+  else if((q=x.match(/^(linewidth|dotsize|fontsize|arrowwidth|arrowhead)\s*=\s*(.*)$/s))&&lenTo(q[2],"pt")!==null){const kk={linewidth:"lw",dotsize:"dr",fontsize:"fs",arrowwidth:"aw",arrowhead:"ah"}[q[1]];S[kk]=String(lenTo(q[2],"pt"));osrc[kk]={tok:x,v:S[kk]}}
+  else if((q=x.match(/^bgmargin\s*=\s*(.*)$/s))&&lenTo(q[1],"cm")!==null){S.mg=String(lenTo(q[1],"cm"));osrc.mg={tok:x,v:S.mg}}
+  else if(legacy)ign.push(x);
+  else xo.push(x)}
+ if(S.shape=="custom"){const base=SHAPES.normal,c=[corner.tl,corner.tr,corner.bl,corner.br];S.corners=[0,1,2,3].flatMap(i=>c[i]||[base[2*i],base[2*i+1]])}
+if(osrc.W)osrc.W.v=S.W;
+ osrc.shape={tok:shapeToks,v:S.shape,cv:S.corners?S.corners.join(","):""};
+ S.xo=xo.join(", ");
+ // ----- body
+ const ctx={fs:+S.fs||11,grid:+S.grid,leg:legacy,three:S.heights=="3",corners:S.shape=="custom"&&S.corners?S.corners.map(Number):SHAPES[S.shape]||SHAPES.normal,conv:0,names:0,ipa:0,nodes:{},nodesep:null,pst:0,curved:0,pstopts:0,pstDropped:0},its=[],lns=[];let raw=0,known=0,i=0;const n=body.length;
+ while(i<n){let j=i;while(j<n&&/\s/.test(body[j]))j++;if(j>=n)break;
+  const end=stmtEnd(body,j);let eol=body.indexOf("\n",end);if(eol<0)eol=n;
+  let r=null;if(!body.slice(end,eol).trim())r=interpretStmt(body.slice(j,end),ctx);
+  if(r&&(r.seg||r.segs)){if(!its.some(x=>x.t=="g"))its.push({t:"g"});lns.push(...(r.segs||[r.seg]));known++;i=end}
+  else if(r&&r.drop){if(!r.silent)ctx.pstDropped++;i=end}
+  else if(r&&r.item){its.push(r.item);known++;i=end;if(r.item.t=="v"&&r.item.nm){const pp=itemPos(r.item);if(pp)ctx.nodes[r.item.nm]=pp}}
+  else{const ls=body.lastIndexOf("\n",j-1)+1,e2=Math.max(end,eol);
+   body.slice(ls,e2).split("\n").forEach(l=>{if(l.trim()){its.push({t:"x",tex:l.replace(/\s+$/,"")});raw++}});i=e2}}
+ // ----- apply
+ const st={app:"vowelchart-maker",version:1,units:"cm",...S,osrc,items:its,lines:lns};
+ setState({...st,fg:$("fg").value,bg:$("bg").value,font:$("font").value,snap:$("snap").value});
+ return "Loaded LaTeX code: "+known+" entr"+(known==1?"y":"ies")+" recognised"+(ctx.conv?" ("+ctx.conv+" \\putvowel"+(legacy?"":"*")+" with absolute coordinates converted to relative coordinates"+(ctx.ipa?", "+ctx.ipa+" of them identified as IPA vowels":"")+")":"")+(ctx.pst?", "+ctx.pst+" PSTricks arrow"+(ctx.pst>1?"s":"")+" converted to diphthong arrows"+(ctx.curved?" ("+ctx.curved+" curved one"+(ctx.curved>1?"s":"")+" now straight)":"")+(ctx.pstopts?" – the options of the arrows are not taken over":""):"")+(ctx.pstDropped?", "+ctx.pstDropped+" PSTricks command"+(ctx.pstDropped>1?"s":"")+" that cannot be converted left out":"")+(legacy&&ign.length?", ignored options of the old environment: "+ign.join(", "):"")+(raw?", "+raw+" line"+(raw>1?"s":"")+" kept unchanged as LaTeX entries":"")+(xo.length?", additional options kept: "+xo.join(", "):"")+(nEnv>1?" (only the first of "+nEnv+" vowelchart environments)":"")+"."}
+$("save").onclick=()=>dl("vowelchart-project.json",new Blob([JSON.stringify(getState(),null,1)],{type:"application/json"}));
+$("load").onclick=()=>$("file").click();
+function importText(tx){ // SVG (with data), project (JSON) or LaTeX code -> message
+ const t=tx.trim();let st;
+ if(t.startsWith("<")){const d=new DOMParser().parseFromString(tx,"image/svg+xml"),m=d.querySelector("metadata#vowelchart-maker,metadata");
+  if(!m)throw new Error("this SVG contains no Vowel Chart Maker data");st=JSON.parse(m.textContent)}
+ else if(/\\begin\{vowel(?:chart)?\}/.test(tx)&&!t.startsWith("{"))return texImport(tx);
+ else{try{st=JSON.parse(tx)}catch(e){throw new Error("neither a project, an SVG with Maker data nor LaTeX code with a vowelchart environment")}}
+ setState(st);return "Loaded."}
+$("file").onchange=async e=>{const fl=e.target.files[0];if(!fl)return;
+ try{msg(importText(await fl.text())+" ("+fl.name+")")}catch(err){msg("Could not load: "+err.message)}
+ e.target.value=""};
+const pb=()=>$("pastebox");
+let pendTx=null;
+function runPaste(tx){$("pwarn").hidden=true;pendTx=null;try{msg(importText(tx));pb().hidden=true;$("pastearea").value=""}catch(err){msg("Could not load: "+err.message)}}
+function pasteIn(tx){ // like presets and “Clear all”: ask first if the list already has entries
+ const t=tx.trim();
+ if(!(t.startsWith("<")||t.startsWith("{")||/\\begin\{vowel(?:chart)?\}/.test(t))){msg("Could not load: neither a project, an SVG with Maker data nor LaTeX code with a vowelchart environment");return}
+ if(!items.length){runPaste(tx);return}
+ pendTx=tx;$("pwarntx").textContent="Loading the pasted code will remove all "+items.length+" current entr"+(items.length==1?"y":"ies")+" from the list. Continue?";
+ $("pwarn").hidden=false;$("pwarnyes").focus()}
+$("pwarnyes").onclick=()=>{if(pendTx!==null)runPaste(pendTx)};
+$("pwarnno").onclick=()=>{$("pwarn").hidden=true;pendTx=null};
+$("paste").onclick=async()=>{
+ try{const tx=await navigator.clipboard.readText();if(!tx.trim())throw new Error("empty");pasteIn(tx);return}catch(e){}
+ pb().hidden=false;$("pastearea").value="";$("pastearea").focus()};
+$("pastearea").addEventListener("paste",e=>{const tx=(e.clipboardData||window.clipboardData).getData("text");if(tx.trim()){e.preventDefault();pasteIn(tx)}});
+$("pastego").onclick=()=>pasteIn($("pastearea").value);
+$("pastecancel").onclick=()=>{pb().hidden=true};
+document.addEventListener("paste",e=>{ // Ctrl+V anywhere outside of input fields
+ const t=e.target;if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable))return;
+ const tx=(e.clipboardData||window.clipboardData).getData("text");
+ if(/\\begin\{vowel(?:chart)?\}|vowelchart-maker/.test(tx)){e.preventDefault();pasteIn(tx)}});
+$("allLines").onclick=()=>{lines=segList($("heights").value=="3").map(s=>s.join(","));draw()};
+$("clrLines").onclick=()=>{lines=[];draw()};
+function dl(name,blob){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+function msg(t){$("msg").textContent=t;setTimeout(()=>{if($("msg").textContent==t)$("msg").textContent=""},3500+t.length*40)}
+$("dsvg").onclick=()=>dl("vowelchart.svg",new Blob([svgText()],{type:"image/svg+xml"}));
+function toPNG(cb){
+ const s=$("view").querySelector("svg"),k=+$("pscale").value,w=TV.vw,h=TV.vh;
+ const img=new Image();
+ img.onload=()=>{const c=document.createElement("canvas");c.width=Math.round(w*k);c.height=Math.round(h*k);
+  const x=c.getContext("2d");x.scale(k,k);x.drawImage(img,0,0,w,h);c.toBlob(cb,"image/png")};
+ img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svgText());
+}
+$("dpng").onclick=()=>toPNG(b=>dl("vowelchart.png",b));
+$("cpng").onclick=()=>toPNG(async b=>{
+ try{await navigator.clipboard.write([new ClipboardItem({"image/png":b})]);msg("PNG copied to the clipboard.")}
+ catch(e){msg("Copying is not allowed here – use “Download PNG”.")}});
+$("csvg").onclick=async()=>{try{await navigator.clipboard.writeText(svgText());msg("SVG code copied.")}catch(e){msg("Copying is not allowed here – use “Download SVG”.")}};
+$("ctex").onclick=async()=>{try{await navigator.clipboard.writeText($("tex").value);msg("LaTeX code copied.")}catch(e){$("tex").select();msg("Select and copy manually.")}};
+
+// ---------- clicking in the chart
+function inv(x,y){ // pixel -> [h,v] (Newton iteration on the bilinear map)
+ let h=1,v=1.5;
+ for(let i=0;i<12;i++){
+  const p=G.map(h,v),e=1e-4,a=G.map(h+e,v),b=G.map(h,v+e);
+  const j11=(a[0]-p[0])/e,j21=(a[1]-p[1])/e,j12=(b[0]-p[0])/e,j22=(b[1]-p[1])/e;
+  const det=j11*j22-j12*j21; if(Math.abs(det)<1e-9)break;
+  const rx=x-p[0],ry=y-p[1];
+  h+=( j22*rx-j12*ry)/det; v+=(-j21*rx+j11*ry)/det;
+ }
+ return [h,v];
+}
+function snapHV(h,v){
+ const s=+$("snap").value;
+ h=Math.min(2,Math.max(0,h));v=Math.min(3,Math.max(0,v));
+ if(s){h=Math.round(h/s)*s;v=Math.round(v/s)*s}
+ return [Math.round(h*100)/100,Math.round(v*100)/100];
+}
+let IPAG=null;
+// besides the canonical position of each symbol (key = the symbol itself): the central vowels and
+// the mid vowels (v = 1.5); u = upper, d = lower candidate at the same side
+const EXTRA={"a'":"","'a'":"","ə'":"","'ə":"","ɐ'":"","'ɐ":"","e'":"u","ɛ'":"d","ø'":"u","œ'":"d","ɔ'":"d"};
+// mid vowels at the back that the table of the package does not contain (placed with coordinates)
+const MIDX=[{sym:"ɤ",side:"l",vert:"u",h:2,v:1.5},{sym:"ʌ",side:"l",vert:"d",h:2,v:1.5},{sym:"o",side:"r",vert:"u",h:2,v:1.5}];
+function ipaGroups(){ if(IPAG)return IPAG; const by={};IPAG=[];
+ const add=c=>{const key=c.h+","+c.v; if(!by[key]){by[key]={h:c.h,v:c.v,c:[]};IPAG.push(by[key])} by[key].c.push(c)};
+ for(const k in IPA){const r=IPA[k]; if(k===r[0]||(k in EXTRA)) add({sym:r[0],h:r[2],v:r[3],side:r[1],key:k,vert:EXTRA[k]||""})}
+ MIDX.forEach(c=>add({...c,key:"",custom:true}));
+ return IPAG}
+function nearestIPA(x,y){let best=null,bd=1e18;
+ for(const g of ipaGroups()){const p=G.map(g.h,g.v),d=Math.hypot(p[0]-x,p[1]-y);if(d<bd){bd=d;best=g}}
+ if(!best)return null; const p=G.map(best.h,best.v), L=best.c, dx=x-p[0], dy=y-p[1]; let ch=null;
+ if(L.some(c=>c.vert)){const sd=dx<0?"l":"r",vt=dy<0?"u":"d";
+  ch=L.find(c=>c.side==sd&&c.vert==vt)||L.find(c=>c.side==sd)||L[0]}
+ else{const c={};L.forEach(e=>c[e.side]=e);
+  let order;
+  if(c.x&&c.l&&c.r) order=Math.abs(dx)<G.em*.35?["x"]:(dx<0?["l"]:["r"]);
+  else order=dx<0?["l","x","r"]:["r","x","l"];
+  for(const s of order){if(c[s]){ch=c[s];break}}}
+ return {c:ch,g:best,d:bd,pos:p}}
+// line segments of the ipanew grid between the crossing points
+function segList(three){const hs=three?[0,1.5,3]:[0,1,2,3],L=[];
+ for(const v of hs){L.push([0,v,1,v],[1,v,2,v])}
+ for(let i=0;i<hs.length-1;i++)for(const h of [0,1,2])L.push([h,hs[i],h,hs[i+1]]);
+ return L}
+function dseg(p,a,b){const dx=b[0]-a[0],dy=b[1]-a[1],l2=dx*dx+dy*dy;let s=l2?((p[0]-a[0])*dx+(p[1]-a[1])*dy)/l2:0;s=Math.max(0,Math.min(1,s));
+ return Math.hypot(p[0]-a[0]-s*dx,p[1]-a[1]-s*dy)}
+function svgPt(e){const s=$("view").querySelector("svg");if(!s)return null;
+ const pt=s.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const q=pt.matrixTransform(s.getScreenCTM().inverse());return [q.x,q.y]}
+const DIPLIKE=["dip","sline","srect","sell"],HINT0={move:"Drag a vowel, an end of an arrow or line, a corner of a rectangle, the center or a radius handle of an ellipse (touch: drag with a finger).",
+ off:"In this mode, the chart can only be modified by changing values in the list.",
+ ipa:"Click near a vowel position. Left of the dot = unrounded vowel, right of the dot = rounded one (the blue symbol is the one you get; click it again to remove it).",
+ line:"Click near a line segment between two crossing points to add it or (if it is there) remove it. Only available with grid = none.",
+ free:"Click anywhere: a dot is added at that position (as h and v). Type its label in the new row.",
+ text:"Click anywhere: a text is added centered at that position (marked as “vowel” in the list). Type the text in the box “label”. Positions outside the chart can be chosen by changing the coordinates.",
+ dip:"Click the start, then the end of the arrow (an IPA vowel is chosen when the cursor is nearer to it than to the next point of the snap grid). Esc cancels.",
+ sline:"Click the start, then the end of the line (an IPA vowel is chosen when the cursor is nearer to it than to the next point of the snap grid). Esc cancels.",
+ srect:"Click one corner, then the opposite corner of the rectangle. Esc cancels.",
+ sell:"Click the center, then a point on the ellipse (its distance from the center gives the radii, without snapping; nearly equal radii become a circle). Esc cancels."};
+const HINT=HINT0, PEND={dip:"Now click the end of the arrow.",sline:"Now click the end of the line.",srect:"Now click the opposite corner.",sell:"Now click a point on the ellipse."};
+function updateModeOpts(){const none=+$("grid").value<0,o=$("mode").querySelector('[value=line]');o.disabled=!none;$("allLines").disabled=$("clrLines").disabled=!none;
+ if(!none&&$("mode").value=="line"){$("mode").value="ipa";setMode()}}
+function setMode(){pend=null;$("snap").disabled=!["free","text","move"].concat(DIPLIKE).includes($("mode").value);$("hint").textContent=HINT[$("mode").value];$("view").classList.toggle("click",$("mode").value!="off"&&$("mode").value!="move");$("view").classList.toggle("move",$("mode").value=="move");ghost()}
+$("mode").onchange=()=>{setMode();draw()}; $("snap").onchange=ghost; setMode();
+document.addEventListener("keydown",e=>{if(e.key=="Escape"&&pend){pend=null;ghost();$("hint").textContent=HINT[$("mode").value]}});
+function ellR(p,q){const r2=x=>Math.round(x*100)/100;let rx=Math.abs(q[0]-p[0])/G.u,ry=Math.abs(q[1]-p[1])/G.u;
+ if(Math.abs(rx-ry)<=.12*Math.max(rx,ry)){rx=ry=(rx+ry)/2} else {if(rx<.03)rx=ry;if(ry<.03)ry=rx}
+ return [r2(rx),r2(ry)]}
+function target(pt){ // what a click at pt would select
+ const m=$("mode").value, n=nearestIPA(pt[0],pt[1]), hv=snapHV(...inv(pt[0],pt[1]));
+ if(m=="sell"&&pend){const h2=inv(pt[0],pt[1]);return {kind:"free",hv:[Math.round(h2[0]*100)/100,Math.round(h2[1]*100)/100],pos:pt,raw:true}}
+ if(m=="ipa") return n&&{kind:"ipa",c:n.c,g:n.g,pos:n.pos};
+ if(m=="line"){let best=null,bd=1e18;for(const s of segList(G.three)){const d=dseg(pt,G.map(s[0],s[1]),G.map(s[2],s[3]));if(d<bd){bd=d;best=s}}
+  return best&&{kind:"line",seg:best}}
+ if(m=="free"||m=="text") return {kind:"free",hv,pos:G.map(...hv)};
+ if(DIPLIKE.includes(m)){const s=+$("snap").value,fp=G.map(...hv),dF=Math.hypot(fp[0]-pt[0],fp[1]-pt[1]);
+  // an IPA vowel is chosen if the cursor is nearer to it than to the nearest grid point (without grid: if very close)
+  if(n&&(s?n.d<=dF:n.d<.12*G.u)) return {kind:"ipa",c:n.c,g:n.g,pos:n.pos};
+  return {kind:"free",hv,pos:fp}}
+ return null}
+function ghost(){
+ const s=$("view").querySelector("svg"); if(!s||!G)return;
+ let g=s.querySelector("#ghost"); if(g)g.remove();
+ const m=$("mode").value;
+ g=document.createElementNS(NS,"g");g.id="ghost";g.setAttribute("pointer-events","none");
+ let h="";
+ if(m!="off"&&G.type<0){const M=G.map,P=[[0,0],[2,0],[2,3],[0,3]].map(a=>M(...a)),L=(a,b,c,d)=>{const p=M(a,b),q=M(c,d);return `<path d="M${f(p[0])} ${f(p[1])}L${f(q[0])} ${f(q[1])}"/>`};
+  h+=`<g fill="none" stroke="#7aa2e0" stroke-width="1" stroke-dasharray="5 4"><path d="M${P.map(p=>f(p[0])+" "+f(p[1])).join("L")}Z"/>`+(G.three?L(0,1.5,2,1.5):L(0,1,2,1)+L(0,2,2,2))+L(1,0,1,3)+`</g>`}
+ if(m!="off"&&pend){const p=G.map(pend.h,pend.v);h+=`<circle cx="${f(p[0])}" cy="${f(p[1])}" r="${G.dr+4}" fill="none" stroke="#2f5fa8" stroke-width="1.5"/>`}
+ if(m!="off"&&lastPt){const T=target(lastPt);
+  if(T&&T.kind=="line"){const p=G.map(T.seg[0],T.seg[1]),q=G.map(T.seg[2],T.seg[3]);
+   h+=`<path d="M${f(p[0])} ${f(p[1])}L${f(q[0])} ${f(q[1])}" stroke="#2f5fa8" stroke-opacity=".55" stroke-width="5" stroke-linecap="round" fill="none"/>`;
+   $("hint").textContent=HINT[m]
+  }else if(T){ if(pend){const p=G.map(pend.h,pend.v),th=T.kind=="ipa"?[T.c.h,T.c.v]:T.hv,pp=q=>f(q[0])+" "+f(q[1]),ds=`fill="none" stroke="#2f5fa8" stroke-width="1.5" stroke-dasharray="4 3"`;
+   if(m=="srect")h+=`<path d="M${pp(p)}L${pp(G.map(th[0],pend.v))}L${pp(T.pos)}L${pp(G.map(pend.h,th[1]))}Z" ${ds}/>`;
+   else if(m=="sell"){const R=ellR(p,T.pos);h+=`<ellipse cx="${f(p[0])}" cy="${f(p[1])}" rx="${f(R[0]*G.u)}" ry="${f(R[1]*G.u)}" ${ds}/>`}
+   else h+=`<line x1="${f(p[0])}" y1="${f(p[1])}" x2="${f(T.pos[0])}" y2="${f(T.pos[1])}" ${ds}/>`}
+   h+=`<circle cx="${f(T.pos[0])}" cy="${f(T.pos[1])}" r="${G.dr+5}" fill="#2f5fa8" fill-opacity=".18" stroke="#2f5fa8" stroke-width="1.5"/>`;
+   if(T.kind=="ipa"){
+    for(const c of T.g.c){const s=c.side,on=c===T.c,xx=s=="l"?T.pos[0]-G.dr-G.em*.18:s=="r"?T.pos[0]+G.dr+G.em*.18:T.pos[0];
+     const yy=T.pos[1]+(s=="x"?-G.em*.9:G.em*.225)+(c.vert=="u"?-G.em*.5:c.vert=="d"?G.em*.5:0);
+     h+=`<text x="${f(xx)}" y="${f(yy)}" text-anchor="${s=="l"?"end":s=="r"?"start":"middle"}" font-family="${fam()}" font-size="${G.em}" fill="${on?"#2f5fa8":"#9aa"}" ${on?'font-weight="bold"':""} stroke="#fff" stroke-width="3" paint-order="stroke">${esc(c.sym)}</text>`}}
+   $("hint").textContent=HINT[m]+(T.kind=="ipa"?"  →  "+T.c.sym:"  →  h="+T.hv[0]+", v="+T.hv[1]);
+  }}
+ if(m=="move"){const hs=handles(),hot=drag||(lastPt&&pickHandle(lastPt,14));
+  $("hint").textContent=drag?drag.msg:hot?HINT.move+"  →  "+descH(hot):HINT.move;
+  for(const q of hs){const on=hot&&hot.i==q.i&&hot.k==q.k&&hot.j==q.j,sq=q.k=="rx"||q.k=="ry";
+   h+=sq?`<rect x="${f(q.P[0]-4)}" y="${f(q.P[1]-4)}" width="8" height="8" fill="${on?"#2f5fa8":"#fff"}" fill-opacity="${on?.9:.8}" stroke="#2f5fa8" stroke-width="1.5"/>`
+        :`<circle cx="${f(q.P[0])}" cy="${f(q.P[1])}" r="${on?G.dr+7:G.dr+4}" fill="${on?"#2f5fa8":"#fff"}" fill-opacity="${on?.25:.5}" stroke="#2f5fa8" stroke-width="1.5"/>`}}
+ h+=hlSvg();
+ g.innerHTML=h;s.appendChild(g)}
+// highlight of the item whose row has the focus or the mouse (not exported)
+let hlF=-1,hlH=-1;
+function hlSvg(){const i=hlH>=0?hlH:hlF,it=items[i]; if(!it||!G||it.t=="x")return "";
+ const C="#f08a00",dot=p=>`<circle cx="${f(p[0])}" cy="${f(p[1])}" r="${G.dr+7}" fill="${C}" fill-opacity=".28" stroke="${C}" stroke-width="2"/>`;
+if(it.t=="g")return lines.map(l=>{const q=l.split(",").map(Number),A=G.map(q[0],q[1]),B=G.map(q[2],q[3]);return `<path d="M${f(A[0])} ${f(A[1])}L${f(B[0])} ${f(B[1])}" stroke="${C}" stroke-opacity=".45" stroke-width="8" stroke-linecap="round" fill="none"/>`}).join("");
+ if(it.t=="v"){let P=null;
+  if(String(it.h).trim()!==""&&String(it.v).trim()!==""&&!isNaN(+it.h)&&!isNaN(+it.v))P=G.map(+it.h,+it.v);
+  else{const r=lookup((it.sym||"").trim());if(r)P=G.map(r[2],r[3])}
+  return P?dot(P):""}
+ if(ISSH(it.t)){const a=pos(it.from);if(!a)return "";const P=G.map(a.h,a.v),pp=q=>f(q[0])+" "+f(q[1]),st=`fill="none" stroke="${C}" stroke-opacity=".4" stroke-width="10" stroke-linejoin="round" stroke-linecap="round"`;
+  if(it.t=="e"){const r=parseR(it.to);return (r?`<ellipse cx="${f(P[0])}" cy="${f(P[1])}" rx="${f(r[0]*G.u)}" ry="${f(r[1]*G.u)}" ${st}/>`:"")+dot(P)}
+  const b=pos(it.to);if(!b)return dot(P);
+  if(it.t=="r")return `<path d="M${pp(P)}L${pp(G.map(b.h,a.v))}L${pp(G.map(b.h,b.v))}L${pp(G.map(a.h,b.v))}Z" ${st}/>`+dot(P)+dot(G.map(b.h,b.v));
+  return `<path d="M${pp(P)}L${pp(G.map(b.h,b.v))}" ${st}/>`+dot(P)+dot(G.map(b.h,b.v))}
+ const a=pos(it.from),b=pos(it.to);
+ if(a&&b){const P=G.map(a.h,a.v),Q=G.map(b.h,b.v);
+  return `<path d="M${f(P[0])} ${f(P[1])}L${f(Q[0])} ${f(Q[1])}" stroke="${C}" stroke-opacity=".4" stroke-width="10" stroke-linecap="round" fill="none"/>`+dot(P)+dot(Q)}
+ return a?dot(G.map(a.h,a.v)):b?dot(G.map(b.h,b.v)):""}
+document.addEventListener("focusin",e=>{const r=e.target.closest&&e.target.closest("#rows .r");hlF=r?+r.dataset.i:-1;ghost()});
+document.addEventListener("focusout",()=>{hlF=-1;ghost()});
+$("rows").addEventListener("mouseover",e=>{const r=e.target.closest(".r");const n=r?+r.dataset.i:-1;if(n!==hlH){hlH=n;ghost()}});
+$("rows").addEventListener("mouseleave",()=>{hlH=-1;ghost()});
+$("view").addEventListener("mousemove",e=>{if($("mode").value=="off")return;const p=svgPt(e);if(!p)return;lastPt=p;ghost()});
+$("view").addEventListener("mouseleave",()=>{lastPt=null;ghost();$("hint").textContent=HINT[$("mode").value]});
+$("view").addEventListener("click",e=>{
+ const m=$("mode").value; if(m=="off"||m=="move")return; const p=svgPt(e); if(!p)return; const T=target(p); if(!T)return;
+ if(m=="ipa"){
+  const C=T.c,i=items.findIndex(v=>{if(v.t!="v")return false;
+   if(C.custom)return v.sym.trim()==C.sym&&+v.h==C.h&&+v.v==C.v&&(v.side=="auto"?"r":v.side)==C.side;
+   if(v.h||v.v||v.lab)return false;const r=lookup(v.sym.trim());
+   return r&&r[0]==C.sym&&r[2]==C.h&&r[3]==C.v&&(v.side=="auto"?r[1]:v.side)==C.side});
+  if(i>=0)items.splice(i,1);else items.push(C.custom?{t:"v",sym:C.sym,side:C.side,h:String(C.h),v:String(C.v),lab:"",color:""}:{t:"v",sym:C.key,side:"auto",h:"",v:"",lab:"",color:""});
+  buildRows();draw();
+ }else if(m=="line"){const k=T.seg.join(","),i=lines.indexOf(k);if(i>=0)lines.splice(i,1);else lines.push(k);draw();
+ }else if(m=="free"||m=="text"){
+  items.push({t:"v",sym:"",side:m=="text"?"x":"auto",h:String(T.hv[0]),v:String(T.hv[1]),lab:"",color:""});buildRows();draw();
+  const r=document.querySelector("#rows .r:last-child [data-k=lab]");if(r)r.focus();
+ }else if(DIPLIKE.includes(m)){
+  const pt=T.kind=="ipa"?{key:T.c.key,sym:T.c.sym,h:T.c.h,v:T.c.v}:{key:"",sym:"",h:T.hv[0],v:T.hv[1]};
+  if(!pend){pend=pt;$("hint").textContent=PEND[m];ghost();}
+  else{const a=pend.key||pend.h+","+pend.v,b=pt.key||pt.h+","+pt.v;
+   if(m=="dip")items.push({t:"d",from:a,to:b,label:(pend.key&&pt.key)?"*":"",pos:"above",color:""});
+   else if(m=="sline")items.push(SH("l",{from:a,to:b}));
+   else if(m=="srect")items.push(SH("r",{from:a,to:b}));
+   else{const p=G.map(pend.h,pend.v),[rx,ry]=ellR(p,T.pos);
+    if(rx>0)items.push(SH("e",{from:a,to:rx==ry?String(rx):rx+","+ry}))}
+   pend=null;buildRows();draw();}
+ }
+});
+
+// ---------- move mode: drag vowels, arrow/line ends, corners, ellipse center and radii
+let drag=null;
+function vposHV(it){if(String(it.h).trim()!==""&&String(it.v).trim()!==""&&!isNaN(+it.h)&&!isNaN(+it.v))return [+it.h,+it.v];const r=lookup((it.sym||"").trim());return r?[r[2],r[3]]:null}
+function handles(){const H=[];
+ items.forEach((it,i)=>{
+  if(it.t=="v"){const q=vposHV(it);if(q)H.push({i,k:"v",P:G.map(q[0],q[1]),hv:q});return}
+  if(!(it.t=="d"||ISSH(it.t)))return;
+  const a=pos(it.from);if(a)H.push({i,k:"from",P:G.map(a.h,a.v),hv:[a.h,a.v]});
+  if(it.t=="e"){const r=parseR(it.to);if(a&&r){const C=G.map(a.h,a.v);H.push({i,k:"rx",P:[C[0]+r[0]*G.u,C[1]],rv:r});if(String(it.to).indexOf(",")>=0)H.push({i,k:"ry",P:[C[0],C[1]+r[1]*G.u],rv:r})}return}
+  const b=pos(it.to);if(b)H.push({i,k:"to",P:G.map(b.h,b.v),hv:[b.h,b.v]});
+  if(it.t=="l"&&String(it.more||"").trim())String(it.more).split(";").map(x=>x.trim()).filter(Boolean).forEach((x,j)=>{const m=pos(x);if(m)H.push({i,k:"more",j,P:G.map(m.h,m.v),hv:[m.h,m.v]})})});
+ return H}
+const rr=x=>Math.round(x*100)/100,LHV=q=>"h = "+rr(q[0])+", v = "+rr(q[1]);
+function descH(h){if(h.hv)return LHV(h.hv);const rx=h.k=="rx",c=String(items[h.i].to).indexOf(",")<0;return (c?"radius":rx?"rx":"ry")+" = "+rr(rx?h.rv[0]:h.rv[1])}
+function pickHandle(p,tol){let best=null,bd=tol;for(const h of handles()){const d=Math.hypot(h.P[0]-p[0],h.P[1]-p[1]);if(d<=bd){bd=d;best=h}}return best}
+function tolOf(e){const s=$("view").querySelector("svg");if(!s)return 14;const sc=s.getBoundingClientRect().width/s.viewBox.baseVal.width||1;return (e.pointerType=="touch"?28:14)/sc}
+function snapEnd(p){ // IPA vowel near the point, otherwise the snapped grid point
+ const hv=snapHV(...inv(p[0],p[1])),n=nearestIPA(p[0],p[1]),s=+$("snap").value,fp=G.map(...hv),dF=Math.hypot(fp[0]-p[0],fp[1]-p[1]);
+ if(n&&(s?n.d<=dF:n.d<.12*G.u))return {key:n.c.key,h:n.c.h,v:n.c.v};
+ return {key:"",h:hv[0],v:hv[1]}}
+function applyDrag(D,p){const it=items[D.i];if(!it)return;const e=snapEnd(p),str=e.key||e.h+","+e.v;
+ D.msg=null;
+ if(D.k=="v"){if(!(String(it.h).trim()!==""&&String(it.v).trim()!=="")){const r=lookup((it.sym||"").trim());if(r){if(!String(it.lab||"").trim())it.lab=r[0];if(it.side=="auto")it.side=r[1]}}
+  it.h=String(e.h);it.v=String(e.v)}
+ else if(D.k=="from")it.from=str;
+ else if(D.k=="to")it.to=str;
+ else if(D.k=="more"){const a=String(it.more).split(";").map(x=>x.trim()).filter(Boolean);a[D.j]=e.h+","+e.v;it.more=a.join(" ; ")}
+ else if(D.k=="rx"||D.k=="ry"){const a=pos(it.from),C=G.map(a.h,a.v),r=parseR(it.to)||[1,1],r2=x=>Math.max(.05,Math.round(x*100)/100);
+  let rx=r[0],ry=r[1];if(D.k=="rx")rx=r2(Math.abs(p[0]-C[0])/G.u);else ry=r2(Math.abs(p[1]-C[1])/G.u);
+  if(String(it.to).indexOf(",")<0)ry=rx;it.to=(rx==ry&&String(it.to).indexOf(",")<0)?String(rx):rx+","+ry;
+  const c=String(it.to).indexOf(",")<0;D.msg=D.from0+" → "+(c?"radius":D.k)+" = "+(D.k=="rx"||c?rx:ry)}
+ if(D.k!="rx"&&D.k!="ry")D.msg=D.from0+" → "+LHV([e.h,e.v])+(e.key?" ("+e.key+")":"")}
+$("view").addEventListener("pointerdown",e=>{if($("mode").value!="move"||!G||(e.pointerType=="mouse"&&e.button!==0))return;
+ const p=svgPt(e);if(!p)return;const h=pickHandle(p,tolOf(e));if(!h)return;
+ e.preventDefault();drag=h;drag.from0=descH(h);drag.msg=drag.from0;try{$("view").setPointerCapture(e.pointerId)}catch(_){}$("view").classList.add("drag");lastPt=p;ghost()});
+$("view").addEventListener("pointermove",e=>{if(!drag)return;const p=svgPt(e);if(!p)return;e.preventDefault();lastPt=p;applyDrag(drag,p);draw()});
+const endDrag=()=>{if(!drag)return;drag=null;$("view").classList.remove("drag");buildRows();draw()};
+$("view").addEventListener("pointerup",endDrag);$("view").addEventListener("pointercancel",endDrag);
+items=[];
+buildRows();
+(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(draw);
+</script>
+</body>
+</html>
