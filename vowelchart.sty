@@ -22,7 +22,7 @@
 %% Fukui Rei and `pst-vowel' by Alan Munn.
 %%
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{vowelchart}[2026/11/21 v1.0 Vowel charts with TikZ]
+\ProvidesPackage{vowelchart}[2026/11/24 v1.1 Vowel charts with TikZ]
 \RequirePackage{xparse}
 \RequirePackage{tikz}
 \RequirePackage{contour}
@@ -48,6 +48,8 @@
 \newdimen\vc@target                               % requested width or height
 \newdimen\vowelchartline \vowelchartline=.2pt     % line width
 \newdimen\vowelchartdot  \vowelchartdot=1.4pt     % dot radius
+\newdimen\vowelchartarrow \vowelchartarrow=.6pt   % line width of diphthong arrows
+\newdimen\vowelcharthead  \vowelcharthead=6pt      % size (width) of arrowheads
 \newdimen\vc@ov \vc@ov=.5pt                       % overlap of the white strip
 \newdimen\vc@stripeh \vc@stripeh=1.5pt            % thickness of the white strip next to a dot
 \newdimen\vc@zh                                   % evaluated height of the white field
@@ -64,8 +66,8 @@
 \def\vc@zonew{0.7em}      % option "zonew": width of the white field behind central vowels
 \def\vc@zoneh{1em}        % option "zoneh": height of that field (0pt = no field)
 \def\vc@zonecolor{}       % color of that field (empty = same as the label background)
-\def\vc@framex{2pt}       % margin of the chart background, left and right
-\def\vc@framey{.7em}      % margin of the chart background, top and bottom
+\def\vc@framex{0pt}       % margin of the chart background, left and right (option bgmargin)
+\def\vc@framey{0pt}       % margin of the chart background, top and bottom (option bgmargin)
 \def\vc@diphmargin{.15em} % option "diphmargin": contour around diphthong labels
 \def\vc@ipashorten{3pt}   % option "ipashorten": shortening of arrows at IPA positions (\putipadiphthong)
 \def\vc@labelbg{}         % option "labelbg": background of labels (empty = chart background)
@@ -102,10 +104,15 @@
   vc bg/.style={fill=\vc@bg},
   % diphthong arrow and the label in its middle
   vc diph/.style={
-    line width=2\vowelchartline,
-    -{latex[length=3mm, width=2.5mm]},
+    line width=\vowelchartarrow,
+    vc arrowhead,
     shorten >=1pt, shorten <=1pt,
   },
+  % arrowhead: its size is read when the arrow is drawn
+  vc arrowhead/.code={%
+    \edef\vc@arrowspec{-{Latex[length=\the\dimexpr1.2\vowelcharthead\relax,
+      width=\the\vowelcharthead]}}%
+    \expandafter\pgfkeysalso\expandafter{\vc@arrowspec}},
   vc diph label/.style={sloped, midway, inner sep=0pt, text=vowelchartcur, vc diph pos},
   % the position of the label is chosen at the moment the node is created,
   % so that diphlabelpos can also be given in the options of a single arrow
@@ -186,21 +193,31 @@
   \vc@resolve}
 
 % Typeset a glyph (or label) #1 on its cleared background
+\newdimen\vc@gh \newdimen\vc@gd
 \newcommand\vc@glyph[1]{%
   \sbox\z@{#1}%
   \setlength\fboxsep{0pt}%
+  % size reported to TikZ (and thus to the bounding box): at least the box
+  % set by boxh/boxd, but never smaller than the glyph itself (with its
+  % contour); otherwise tall glyphs (the dot of i) stick out of a background
   \ifvc@conoff
     \def\vc@gtext{#1}%
+    \vc@gh=\ht\z@ \vc@gd=\dp\z@
   \else
     \def\vc@gtext{\contour{\vc@econ}{#1}}%
+    \vc@gh=\dimexpr\ht\z@+\con@base@length\relax
+    \vc@gd=\dimexpr\dp\z@+\con@base@length\relax
   \fi
+  \ifdim\vc@gh<\vc@boxh\relax \vc@gh=\vc@boxh\relax\fi
+  \ifdim\vc@gd<\vc@boxd\relax \vc@gd=\vc@boxd\relax\fi
   \def\vc@gbox{\raisebox{0pt}[\vc@boxh][\vc@boxd]{%
     \makebox[\dimexpr\wd\z@+\vc@padx+\vc@padx\relax][c]{\vc@gtext}}}%
-  \ifvc@bgoff
-    \vc@gbox
-  \else
-    \colorbox{\vc@ebg}{\vc@gbox}%
-  \fi}
+  \raisebox{0pt}[\vc@gh][\vc@gd]{%
+    \ifvc@bgoff
+      \vc@gbox
+    \else
+      \colorbox{\vc@ebg}{\vc@gbox}%
+    \fi}}
 
 % ---------------------------------------------------------------
 % Placement: \vc@place[l|r|x]{label}{x}{y}{node name}
@@ -289,6 +306,7 @@
   standard/.code    ={\def\vc@type{2}},
   simple/.code      ={\def\vc@type{1}},
   plain/.code       ={\def\vc@type{0}},
+  none/.code        ={\def\vc@type{-1}},
   centralzone/.code ={\def\vc@type{4}},
   centralcol/.code  ={\def\vc@type{5}},
   three/.code       ={\vc@threetrue},
@@ -308,6 +326,9 @@
   % \vc@applydims after all options have been read)
   linewidth/.code  ={\def\vc@o@line{#1}},
   dotsize/.code    ={\def\vc@o@dot{#1}},
+  arrowwidth/.code ={\def\vc@o@arrow{#1}},
+  arrowhead/.code  ={\def\vc@o@head{#1}},
+  bgmargin/.code   ={\def\vc@framex{#1}\def\vc@framey{#1}},
   margin/.code     ={\def\vc@o@margin{#1}},
   stripe/.code     ={\def\vc@o@stripe{#1}},
   font/.code       ={#1},
@@ -352,8 +373,10 @@
 \newcommand\vc@hline[1]{\vc@seg{0}{#1}{2}{#1}}
 
 % Draw the outline and the grid lines. \vc@type: 0 plain, 1 simple,
-% 2 standard, 3 ipanew, 4 centralzone, 5 centralcol
+% 2 standard, 3 ipanew, 4 centralzone, 5 centralcol, -1 none (nothing)
 \newcommand\vc@drawframe{%
+  \ifnum\vc@type<0 \else \vc@drawframe@a \fi}
+\newcommand\vc@drawframe@a{%
   \draw (\vc@tlx,-\vc@tly) -- (\vc@trx,-\vc@try)
         -- (\vc@brx,-\vc@bry) -- (\vc@blx,-\vc@bly) -- cycle;
   \ifnum\vc@type>0
@@ -387,6 +410,8 @@
 \newcommand\vc@applydims{%
   \ifx\vc@o@line\@empty\else\setlength\vowelchartline{\vc@o@line}\fi
   \ifx\vc@o@dot\@empty\else\setlength\vowelchartdot{\vc@o@dot}\fi
+  \ifx\vc@o@arrow\@empty\else\setlength\vowelchartarrow{\vc@o@arrow}\fi
+  \ifx\vc@o@head\@empty\else\setlength\vowelcharthead{\vc@o@head}\fi
   \ifx\vc@o@margin\@empty\else\contourlength{\vc@o@margin}\fi
   \ifx\vc@o@stripe\@empty\else\setlength\vc@stripeh{\vc@o@stripe}\fi}
 
@@ -443,7 +468,7 @@
   \def\vc@size{8em}\def\vc@sizemode{d}\def\vc@type{3}%
   \colorlet{vowelchartbg}{white}\def\vc@bg{vowelchartbg}%
   \def\vc@fg{}\def\vc@paintstyle{vc paint}%
-  \def\vc@o@line{}\def\vc@o@dot{}\def\vc@o@margin{}\def\vc@o@stripe{}%
+  \def\vc@o@line{}\def\vc@o@dot{}\def\vc@o@arrow{}\def\vc@o@head{}\def\vc@o@margin{}\def\vc@o@stripe{}%
   \vc@setcorners{0}{0}{4}{0}{2}{3}{4}{3}%
   \vc@threefalse
   \def\vc@labelbg{}\def\vc@labelcon{}%
@@ -773,6 +798,10 @@
   % remember the current color: the label inherits the color of the arrow
   % (needed because a rotated node does not always do so, e.g. in XeLaTeX)
   \colorlet{vowelchartcur}{.}%
+  % defaults from \vowelchartlabels / the chart options; options of this
+  % arrow (labelbg=, contour=) override them while the arrow is drawn
+  \let\vc@curbg\vc@labelbg
+  \let\vc@curcon\vc@labelcon
   \edef\vc@allopts{vc diph,\vc@dopts}%
   \expandafter\draw\expandafter[\vc@allopts #1] \vc@epa -- \vc@epb \vc@dnode;}
 
